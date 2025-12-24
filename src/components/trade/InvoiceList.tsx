@@ -4,12 +4,8 @@ import React, { useState, useEffect } from "react";
 import { 
   Search, 
   RefreshCw, 
-  Filter, 
-  ChevronDown, 
   Download, 
   Printer, 
-  X, 
-  ChevronLeft,
   FileText,
   Clock,
   CheckCircle2,
@@ -38,7 +34,6 @@ export function InvoiceList({ title, type }: InvoiceListProps) {
   const [syncing, setSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus>("all");
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   const filteredInvoices = invoices.filter(invoice => {
     // Search filter
@@ -255,8 +250,7 @@ export function InvoiceList({ title, type }: InvoiceListProps) {
                 filteredInvoices.map((invoice) => (
                   <tr 
                     key={invoice.id} 
-                    className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer group"
-                    onClick={() => setSelectedInvoice(invoice)}
+                    className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group"
                   >
                     <td className="px-6 py-4">
                       {getStatusBadge(invoice.status)}
@@ -303,165 +297,6 @@ export function InvoiceList({ title, type }: InvoiceListProps) {
           </table>
         </div>
       </div>
-
-      {/* Detail Modal */}
-      {selectedInvoice && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-300">
-          <div className="bg-[#F8F9FD] dark:bg-[#0a0b14] w-full max-w-5xl rounded-[32px] shadow-2xl flex flex-col relative my-8 border border-white/10 overflow-hidden">
-            {/* Modal Header */}
-            <div className="sticky top-0 z-10 bg-white dark:bg-[#111322] border-b border-slate-200 dark:border-white/5 px-8 py-5 flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <button 
-                  onClick={() => setSelectedInvoice(null)}
-                  className="p-2.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-2xl transition-all text-slate-500 dark:text-slate-400 flex items-center gap-2 text-sm font-bold active:scale-95"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  Back
-                </button>
-                <div className="h-8 w-px bg-slate-200 dark:bg-white/10" />
-                <h2 className="text-lg font-black text-slate-900 dark:text-white truncate max-w-md tracking-tight">
-                  Invoice № {selectedInvoice.number}
-                </h2>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button variant="outline" size="sm" leftIcon={<Download className="w-4 h-4" />}>
-                  Download
-                </Button>
-                <Button variant="primary" size="sm" leftIcon={<Printer className="w-4 h-4" />}>
-                  Print
-                </Button>
-                <button 
-                  onClick={() => setSelectedInvoice(null)}
-                  className="p-2.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-2xl transition-all text-slate-400 hover:text-red-500 active:scale-95"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Content */}
-            <div className="flex-1 p-8 overflow-y-auto">
-              <div className="bg-white dark:bg-[#111322] p-10 rounded-[40px] shadow-xl border border-slate-200 dark:border-white/5 space-y-12">
-                {/* Status Section */}
-                <div className={cn(
-                  "p-6 rounded-[24px] border flex flex-col md:flex-row md:items-center justify-between gap-4",
-                  selectedInvoice.status.toLowerCase().includes('рад') 
-                    ? "bg-red-50/50 dark:bg-red-500/5 border-red-100 dark:border-red-500/20" 
-                    : "bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20"
-                )}>
-                  <div className="flex items-center gap-4">
-                    {getStatusBadge(selectedInvoice.status)}
-                    <div className="h-6 w-px bg-slate-200 dark:bg-white/10 hidden md:block" />
-                    <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                      Updated: {selectedInvoice.updatedAt || selectedInvoice.date}
-                    </span>
-                  </div>
-                  {selectedInvoice.didoxData?.status_comment && (
-                    <div className="flex items-center gap-2 text-sm font-medium italic text-slate-500">
-                      <AlertCircle className="w-4 h-4" />
-                      {selectedInvoice.didoxData.status_comment}
-                    </div>
-                  )}
-                </div>
-
-                {/* Info Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                  <div className="space-y-6">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Seller Information</h3>
-                    <div className="bg-slate-50 dark:bg-white/[0.02] p-6 rounded-[24px] border border-slate-100 dark:border-white/5 space-y-4">
-                      <div className="font-black text-slate-900 dark:text-white text-lg uppercase leading-tight">
-                        {selectedInvoice.didoxData?.sellerName || 'Company Name'}
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">TIN</span>
-                          <span className="font-bold text-slate-900 dark:text-white">{selectedInvoice.didoxData?.partnerTin || '—'}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">Address</span>
-                          <span className="font-medium text-slate-900 dark:text-white text-right max-w-[200px]">{selectedInvoice.didoxData?.sellerAddress || '—'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6 text-right">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Buyer Information</h3>
-                    <div className="bg-slate-50 dark:bg-white/[0.02] p-6 rounded-[24px] border border-slate-100 dark:border-white/5 space-y-4 text-right">
-                      <div className="font-black text-slate-900 dark:text-white text-lg uppercase leading-tight">
-                        {selectedInvoice.didoxData?.buyerName || 'Company Name'}
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm flex-row-reverse">
-                          <span className="text-slate-500">TIN</span>
-                          <span className="font-bold text-slate-900 dark:text-white">{selectedInvoice.didoxData?.partnerTin || '—'}</span>
-                        </div>
-                        <div className="flex justify-between text-sm flex-row-reverse">
-                          <span className="text-slate-500">Address</span>
-                          <span className="font-medium text-slate-900 dark:text-white text-left max-w-[200px]">{selectedInvoice.didoxData?.buyerAddress || '—'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Document Details Table */}
-                <div className="space-y-6">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Document Details</h3>
-                  <div className="border border-slate-200 dark:border-white/5 rounded-[24px] overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/5">
-                        <tr>
-                          <th className="px-6 py-4 text-left font-bold text-slate-500">Description</th>
-                          <th className="px-6 py-4 text-right font-bold text-slate-500">Value</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                        <tr>
-                          <td className="px-6 py-4 text-slate-500">Invoice Number & Date</td>
-                          <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">№ {selectedInvoice.number} from {selectedInvoice.date}</td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 text-slate-500">Contract Reference</td>
-                          <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">№ {selectedInvoice.contractNumber || '—'} from {selectedInvoice.contractDate || '—'}</td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 text-slate-500">Delivery Value</td>
-                          <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">{formatCurrency(selectedInvoice.deliveryValue || 0)}</td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 text-slate-500">VAT Amount</td>
-                          <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-white text-blue-600 dark:text-blue-400">{formatCurrency(selectedInvoice.vatAmount || 0)}</td>
-                        </tr>
-                        <tr className="bg-slate-50/50 dark:bg-white/5">
-                          <td className="px-6 py-5 text-slate-900 dark:text-white font-black text-lg">Total Amount</td>
-                          <td className="px-6 py-5 text-right font-black text-slate-900 dark:text-white text-2xl tracking-tighter">{formatCurrency(selectedInvoice.amount)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Footer Notes */}
-                <div className="pt-12 border-t border-slate-100 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-                   <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10">
-                      <div className="w-12 h-12 bg-white dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 flex items-center justify-center">
-                        <span className="text-[8px] text-slate-300 font-bold uppercase text-center leading-[1] px-1">QR CODE</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-medium leading-tight">
-                        Digitally signed document.<br />
-                        Verify via official Didox portal.
-                      </div>
-                   </div>
-                   <div className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
-                      Finance21 Accounting System
-                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
