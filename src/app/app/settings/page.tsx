@@ -35,9 +35,6 @@ interface CompanyData {
   companyType: string | null;
   dbibt: string | null;
   authorizedCapital: string | null;
-  city: string | null;
-  region: string | null;
-  district: string | null;
   address: string | null;
   login: string | null;
   password: string | null;
