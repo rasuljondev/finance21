@@ -192,6 +192,15 @@ export function parseCertificateData(aliasString: string): {
   validTo: string;
   position: string;
   pinfl: string;
+  jshshir: string;
+  district: string;
+  city: string;
+  country: string;
+  businessCategory: string;
+  serialNumber: string;
+  validFrom: string;
+  name: string;
+  surname: string;
 } {
   const parts = aliasString.split(",");
   const data: Record<string, string> = {};
@@ -212,8 +221,13 @@ export function parseCertificateData(aliasString: string): {
   // CN = Common Name (Full Name)
   const fullName = data["cn"] || "";
 
+  // Name and Surname
+  const name = data["name"] || "";
+  const surname = data["surname"] || "";
+
   // validto = Expiry date
   const validTo = data["validto"] || "";
+  const validFrom = data["validfrom"] || "";
 
   // T = Title/Position
   const position = data["t"] || "";
@@ -221,7 +235,37 @@ export function parseCertificateData(aliasString: string): {
   // PINFL is often in 1.2.860.3.16.1.12 or UID
   const pinfl = data["1.2.860.3.16.1.12"] || data["uid"] || data["pinfl"] || "";
 
-  return { inn, companyName, fullName, validTo, position, pinfl };
+  // JSHSHIR from 1.2.860.3.16.1.2
+  const jshshir = data["1.2.860.3.16.1.2"] || "";
+
+  // Location fields
+  const district = data["l"] || "";
+  const city = data["st"] || "";
+  const country = data["c"] || "";
+
+  // Business category (company type)
+  const businessCategory = data["businesscategory"] || "";
+
+  // Serial number
+  const serialNumber = data["serialnumber"] || "";
+
+  return {
+    inn,
+    companyName,
+    fullName,
+    validTo,
+    position,
+    pinfl,
+    jshshir,
+    district,
+    city,
+    country,
+    businessCategory,
+    serialNumber,
+    validFrom,
+    name,
+    surname,
+  };
 }
 
 // Singleton instance

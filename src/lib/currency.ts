@@ -1,79 +1,85 @@
 "use client";
 
-interface ExchangeRateResponse {
-  success: boolean;
-  rate?: number;
-  error?: string;
+export interface CurrencyRate {
+  from: string;
+  to: string;
+  rate: number;
+  label: string;
 }
 
-const CACHE_KEY = "usd_uzs_rate";
+const CACHE_KEY = "currency_rates";
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-async function fetchExchangeRate(): Promise<number> {
+const CURRENCIES = [
+  { from: "USD", to: "UZS", label: "USD/UZS" },
+  { from: "EUR", to: "UZS", label: "EUR/UZS" },
+  { from: "RUB", to: "UZS", label: "RUB/UZS" },
+  { from: "GBP", to: "UZS", label: "GBP/UZS" },
+  { from: "CNY", to: "UZS", label: "CNY/UZS" },
+];
+
+async function fetchExchangeRate(from: string, to: string): Promise<number> {
   try {
-    // Try multiple free APIs
-    const apis = [
-      // API 1: exchangerate-api.com (free tier)
-      async () => {
-        const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
-        const data = await res.json();
-        return data.rates?.UZS;
-      },
-      // API 2: fixer.io alternative
-      async () => {
-        const res = await fetch("https://api.fixer.io/latest?base=USD&symbols=UZS");
-        const data = await res.json();
-        return data.rates?.UZS;
-      },
-      // API 3: currencyapi.net (fallback)
-      async () => {
-        const res = await fetch("https://api.currencyapi.com/v3/latest?apikey=free&currencies=UZS&base_currency=USD");
-        const data = await res.json();
-        return data.data?.UZS?.value;
-      },
-    ];
-
-    for (const api of apis) {
-      try {
-        const rate = await api();
-        if (rate && typeof rate === "number" && rate > 0) {
-          return rate;
-        }
-      } catch (e) {
-        // Try next API
-        continue;
-      }
+    // Try exchangerate-api.com (free tier, supports multiple currencies)
+    const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${from}`);
+    const data = await res.json();
+    const rate = data.rates?.[to];
+    if (rate && typeof rate === "number" && rate > 0) {
+      return rate;
     }
-
-    throw new Error("All exchange rate APIs failed");
-  } catch (error) {
-    console.error("Failed to fetch exchange rate:", error);
-    // Return a reasonable default (approximate current rate)
-    return 12845.0;
+  } catch (e) {
+    console.warn(`Failed to fetch ${from}/${to} from exchangerate-api:`, e);
   }
+
+  // Fallback defaults (approximate rates as of 2024)
+  const defaults: Record<string, number> = {
+    "USD/UZS": 12845.0,
+    "EUR/UZS": 13900.0,
+    "RUB/UZS": 140.0,
+    "GBP/UZS": 16200.0,
+    "CNY/UZS": 1800.0,
+  };
+
+  return defaults[`${from}/${to}`] || 12845.0;
 }
 
-export async function getUSDToUZSRate(): Promise<number> {
+export async function getAllCurrencyRates(): Promise<CurrencyRate[]> {
   // Check cache first
   if (typeof window !== "undefined") {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
-      const { rate, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_DURATION) {
-        return rate;
+      const { rates, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp < CACHE_DURATION && Array.isArray(rates)) {
+        return rates;
       }
     }
   }
 
-  // Fetch fresh rate
-  const rate = await fetchExchangeRate();
+  // Fetch all rates in parallel
+  const ratePromises = CURRENCIES.map(async (currency) => {
+    const rate = await fetchExchangeRate(currency.from, currency.to);
+    return {
+      from: currency.from,
+      to: currency.to,
+      rate,
+      label: currency.label,
+    };
+  });
+
+  const rates = await Promise.all(ratePromises);
 
   // Cache it
   if (typeof window !== "undefined") {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ rate, timestamp: Date.now() }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ rates, timestamp: Date.now() }));
   }
 
-  return rate;
+  return rates;
+}
+
+export async function getUSDToUZSRate(): Promise<number> {
+  const rates = await getAllCurrencyRates();
+  const usdRate = rates.find((r) => r.from === "USD" && r.to === "UZS");
+  return usdRate?.rate || 12845.0;
 }
 
 export function formatCurrency(amount: number, currency: "USD" | "UZS" = "UZS"): string {

@@ -80,13 +80,19 @@ export default function ERILoginModal({ onSuccess, onCancel }: ERILoginModalProp
       }
 
       // Step 4: Send signature to backend (backend will timestamp + exchange Didox token + create session)
+      // Include all available certificate data for better company info extraction
       await loginWithERI({
         inn: certData.inn,
         pkcs7_64: signatureResponse.pkcs7_64,
         signature_hex: signatureResponse.signature_hex,
         companyName: certData.companyName || "Company",
         fullName: certData.fullName || "Director",
-        pinfl: certData.pinfl || undefined,
+        pinfl: certData.pinfl || certData.jshshir || undefined,
+        // Additional fields that can be extracted from certificate
+        jshshir: certData.jshshir || undefined,
+        district: certData.district || undefined,
+        city: certData.city || undefined,
+        businessCategory: certData.businessCategory || undefined,
       });
       onSuccess();
     } catch (err: unknown) {

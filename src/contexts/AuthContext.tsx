@@ -14,6 +14,10 @@ export type ERILoginPayload = {
   companyName: string;
   fullName: string;
   pinfl?: string;
+  jshshir?: string;
+  district?: string;
+  city?: string;
+  businessCategory?: string;
 };
 
 interface AuthContextType {

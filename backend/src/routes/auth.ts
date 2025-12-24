@@ -11,6 +11,10 @@ const EriLoginSchema = z.object({
   companyName: z.string().min(1),
   fullName: z.string().min(1),
   pinfl: z.string().optional(),
+  jshshir: z.string().optional(),
+  district: z.string().optional(),
+  city: z.string().optional(),
+  businessCategory: z.string().optional(),
 });
 
 export async function eriLoginHandler(req: Request, res: Response) {
@@ -20,8 +24,9 @@ export async function eriLoginHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
   }
 
-  const { inn, pkcs7_64, signature_hex, companyName, fullName, pinfl } = parsed.data;
+  const { inn, pkcs7_64, signature_hex, companyName, fullName, pinfl, jshshir, district, city, businessCategory } = parsed.data;
   const resolvedPinfl = (pinfl || "").trim() || `TIN:${inn}`;
+  const resolvedJshshir = (jshshir || "").trim() || null;
   console.log(`[backend] starting ERI login for TIN: ${inn}, Person: ${fullName}`);
   
   const didox = new DidoxClient();
@@ -45,24 +50,31 @@ export async function eriLoginHandler(req: Request, res: Response) {
     const dbStart = Date.now();
     
     const result = await prisma.$transaction(async (tx) => {
-      // Upsert Company
+      // Upsert Company - include additional fields from certificate
       const company = await tx.company.upsert({
         where: { tin: inn },
-        update: { name: companyName },
+        update: {
+          name: companyName,
+          companyType: businessCategory || undefined,
+          district: district || undefined,
+          city: city || undefined,
+        },
         create: {
           tin: inn,
           name: companyName,
           status: "ACTIVE",
+          companyType: businessCategory || undefined,
+          district: district || undefined,
+          city: city || undefined,
         },
       });
 
       // Upsert Person (director) - extract JSHSHIR if available
       // JSHSHIR is typically in the PINFL field or can be extracted from certificate
-      const jshshir = pinfl && pinfl.length === 14 ? pinfl : null;
       const person = await tx.person.upsert({
         where: { pinfl: resolvedPinfl },
-        update: { fullName, jshshir: jshshir || undefined },
-        create: { pinfl: resolvedPinfl, fullName, jshshir: jshshir || undefined },
+        update: { fullName, jshshir: resolvedJshshir || undefined },
+        create: { pinfl: resolvedPinfl, fullName, jshshir: resolvedJshshir || undefined },
       });
 
       // Attach DIRECTOR role
