@@ -7,7 +7,7 @@ generator client {
 
 generator client_backend {
   provider = "prisma-client-js"
-  output   = "../backend/node_modules/.prisma/client"
+  output   = "/var/www/finance21/backend/node_modules/.prisma/client"
 }
 
 datasource db {
