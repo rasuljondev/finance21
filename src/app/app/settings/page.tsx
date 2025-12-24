@@ -15,8 +15,6 @@ import {
   CheckCircle2,
   MessageCircle,
   HelpCircle,
-  TestTube,
-  Terminal,
   DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -24,7 +22,6 @@ import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAlert } from "@/components/ui/AlertProvider";
 import apiClient from "@/lib/api-client";
-import { getEIMZOClient, parseCertificateData, type EIMZOCertificate } from "@/lib/eimzo";
 import { cn } from "@/lib/utils";
 
 interface CompanyData {
@@ -63,14 +60,6 @@ export default function SettingsPage() {
   const [generating, setGenerating] = useState(false);
   const [company, setCompany] = useState<CompanyData | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  
-  // Key extraction test state
-  const [testing, setTesting] = useState(false);
-  const [logs, setLogs] = useState<string[]>([]);
-  const [certificates, setCertificates] = useState<EIMZOCertificate[]>([]);
-  const [selectedCert, setSelectedCert] = useState<EIMZOCertificate | null>(null);
-  const [extractedData, setExtractedData] = useState<any>(null);
-  const [didoxResponse, setDidoxResponse] = useState<any>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -79,9 +68,6 @@ export default function SettingsPage() {
     companyType: "",
     dbibt: "",
     authorizedCapital: "",
-    city: "",
-    region: "",
-    district: "",
     address: "",
     telegramId: "",
   });
@@ -100,9 +86,6 @@ export default function SettingsPage() {
         companyType: company.companyType || "",
         dbibt: company.dbibt || "",
         authorizedCapital: company.authorizedCapital || "",
-        city: company.city || "",
-        region: company.region || "",
-        district: company.district || "",
         address: company.address || "",
         telegramId: company.telegramId || "",
       });
@@ -119,109 +102,6 @@ export default function SettingsPage() {
       showError("Failed to load company information");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
-  };
-
-  const clearLogs = () => {
-    setLogs([]);
-    setExtractedData(null);
-    setDidoxResponse(null);
-  };
-
-  const handleTestKeyExtraction = async () => {
-    setTesting(true);
-    clearLogs();
-    
-    try {
-      addLog("🔌 Connecting to E-IMZO...");
-      const client = getEIMZOClient();
-      
-      // Step 1: List certificates
-      addLog("📋 Listing available certificates...");
-      const certList = await client.getCertificates();
-      if (!certList.success || !certList.certificates || certList.certificates.length === 0) {
-        throw new Error("No certificates found. Please ensure E-IMZO is running and you have certificates installed.");
-      }
-      
-      setCertificates(certList.certificates);
-      addLog(`✅ Found ${certList.certificates.length} certificate(s)`);
-      
-      // Use first certificate if none selected
-      const certToUse = selectedCert || certList.certificates[0];
-      if (!selectedCert && certList.certificates.length > 0) {
-        setSelectedCert(certToUse);
-      }
-      
-      // Step 2: Parse certificate data
-      addLog("🔍 Extracting data from certificate...");
-      const certData = parseCertificateData(certToUse.alias);
-      addLog(`✅ Certificate data extracted`);
-      addLog(`   Company: ${certData.companyName}`);
-      addLog(`   Director: ${certData.fullName}`);
-      addLog(`   TIN: ${certData.inn}`);
-      addLog(`   PINFL: ${certData.pinfl || "N/A"}`);
-      addLog(`   JSHSHIR: ${certData.jshshir || "N/A"}`);
-      addLog(`   District: ${certData.district || "N/A"}`);
-      addLog(`   City: ${certData.city || "N/A"}`);
-      addLog(`   Business Category: ${certData.businessCategory || "N/A"}`);
-      
-      setExtractedData(certData);
-      
-      // Step 3: Load key
-      addLog("🔑 Loading key from certificate...");
-      const loadKeyResponse = await client.loadKey(certToUse);
-      if (!loadKeyResponse.success || !loadKeyResponse.keyId) {
-        throw new Error(loadKeyResponse.error || "Failed to load key");
-      }
-      addLog(`✅ Key loaded successfully`);
-      
-      // Step 4: Create signature
-      addLog("✍️ Creating signature (signing TIN)...");
-      const dataToSign = btoa(certData.inn);
-      const signatureResponse = await client.createSignature(dataToSign, loadKeyResponse.keyId);
-      if (!signatureResponse.success || !signatureResponse.pkcs7_64 || !signatureResponse.signature_hex) {
-        throw new Error(signatureResponse.error || "Failed to create signature");
-      }
-      addLog(`✅ Signature created successfully`);
-      
-      // Step 5: Test Didox connection via backend
-      addLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      addLog("🌐 Testing Didox API connection...");
-      addLog("📤 Sending signature to backend for timestamp...");
-      
-      const timestampRes = await apiClient.post("/auth/eri/login", {
-        inn: certData.inn,
-        pkcs7_64: signatureResponse.pkcs7_64,
-        signature_hex: signatureResponse.signature_hex,
-        companyName: certData.companyName || "Test Company",
-        fullName: certData.fullName || "Test Director",
-        pinfl: certData.pinfl,
-        jshshir: certData.jshshir,
-        district: certData.district,
-        city: certData.city,
-        businessCategory: certData.businessCategory,
-      });
-      
-      addLog(`✅ Didox connection successful!`);
-      addLog(`   Company ID: ${timestampRes.data.company?.id || "N/A"}`);
-      addLog(`   Token received: ${timestampRes.data.ok ? "Yes" : "No"}`);
-      
-      setDidoxResponse(timestampRes.data);
-      
-      addLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      addLog("🎉 All tests completed successfully!");
-      
-    } catch (err: any) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      addLog(`❌ Error: ${errorMsg}`);
-      console.error("Key extraction test error:", err);
-    } finally {
-      setTesting(false);
     }
   };
 
@@ -334,7 +214,12 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <Input label="Company Name" value={company.name} disabled leftIcon={<Building2 className="w-4 h-4" />} />
+              <Input 
+                label="Company Name" 
+                value={company.name.toUpperCase()} 
+                disabled 
+                leftIcon={<Building2 className="w-4 h-4" />} 
+              />
             </div>
 
             <div>
@@ -398,33 +283,6 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <Input
-                label="Region"
-                value={formData.region}
-                onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                placeholder="Enter region"
-              />
-            </div>
-
-            <div>
-              <Input
-                label="City"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="Enter city"
-              />
-            </div>
-
-            <div>
-              <Input
-                label="District"
-                value={formData.district}
-                onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                placeholder="Enter district"
-              />
-            </div>
-
-            <div>
-              <Input
                 label="Address"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -468,7 +326,12 @@ export default function SettingsPage() {
 
             <div className="space-y-4">
               <div>
-                <Input label="Full Name" value={company.director.fullName} disabled leftIcon={<User className="w-4 h-4" />} />
+                <Input 
+                  label="Full Name" 
+                  value={company.director.fullName.toUpperCase()} 
+                  disabled 
+                  leftIcon={<User className="w-4 h-4" />} 
+                />
               </div>
 
               {company.director.pinfl && (
@@ -559,105 +422,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Key Extraction Test */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#111322] rounded-3xl border border-slate-200 dark:border-white/5 p-6 shadow-sm space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-white/5">
-            <TestTube className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Key Extraction & Didox Test</h2>
-          </div>
-
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Test E-IMZO key extraction and Didox API connection. This will extract all available data from your certificate and test the connection to Didox.
-            </p>
-
-            {certificates.length > 0 && (
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Select Certificate
-                </label>
-                <select
-                  value={selectedCert?.alias || ""}
-                  onChange={(e) => {
-                    const cert = certificates.find((c) => c.alias === e.target.value);
-                    setSelectedCert(cert || null);
-                  }}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.03] text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {certificates.map((cert, idx) => {
-                    const data = parseCertificateData(cert.alias);
-                    return (
-                      <option key={idx} value={cert.alias}>
-                        {data.companyName || cert.name} (TIN: {data.inn})
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            )}
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="primary"
-                onClick={handleTestKeyExtraction}
-                isLoading={testing}
-                leftIcon={<TestTube className="w-4 h-4" />}
-              >
-                Test Key Extraction & Didox Connection
-              </Button>
-              {logs.length > 0 && (
-                <Button variant="outline" onClick={clearLogs} leftIcon={<RefreshCw className="w-4 h-4" />}>
-                  Clear Logs
-                </Button>
-              )}
-            </div>
-
-            {/* Logs Display */}
-            {logs.length > 0 && (
-              <div className="bg-slate-900 dark:bg-black rounded-xl p-4 border border-slate-700 dark:border-slate-800">
-                <div className="flex items-center gap-2 mb-3">
-                  <Terminal className="w-4 h-4 text-green-400" />
-                  <span className="text-sm font-bold text-green-400">Test Logs</span>
-                </div>
-                <div className="max-h-96 overflow-y-auto space-y-1 font-mono text-xs">
-                  {logs.map((log, idx) => (
-                    <div
-                      key={idx}
-                      className={cn(
-                        "text-slate-300",
-                        log.includes("✅") && "text-green-400",
-                        log.includes("❌") && "text-red-400",
-                        log.includes("━━") && "text-slate-500"
-                      )}
-                    >
-                      {log}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Extracted Data Display */}
-            {extractedData && (
-              <div className="bg-blue-50 dark:bg-blue-500/10 rounded-xl p-4 border border-blue-200 dark:border-blue-500/20">
-                <h3 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-3">Extracted Certificate Data</h3>
-                <pre className="text-xs text-blue-800 dark:text-blue-200 overflow-x-auto">
-                  {JSON.stringify(extractedData, null, 2)}
-                </pre>
-              </div>
-            )}
-
-            {/* Didox Response Display */}
-            {didoxResponse && (
-              <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-4 border border-green-200 dark:border-green-500/20">
-                <h3 className="text-sm font-bold text-green-900 dark:text-green-100 mb-3">Didox API Response</h3>
-                <pre className="text-xs text-green-800 dark:text-green-200 overflow-x-auto">
-                  {JSON.stringify(didoxResponse, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

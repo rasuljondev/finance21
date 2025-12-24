@@ -9,9 +9,6 @@ const UpdateCompanySchema = z.object({
   companyType: z.string().optional().nullable(),
   dbibt: z.string().optional().nullable(),
   authorizedCapital: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  region: z.string().optional().nullable(),
-  district: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   telegramId: z.string().optional().nullable(),
 });
@@ -54,9 +51,6 @@ export async function getCompanyHandler(req: Request, res: Response) {
         companyType: company.companyType,
         dbibt: company.dbibt,
         authorizedCapital: company.authorizedCapital,
-        city: company.city,
-        region: company.region,
-        district: company.district,
         address: company.address,
         login: company.login,
         telegramId: company.telegramId,
@@ -97,9 +91,6 @@ export async function updateCompanyHandler(req: Request, res: Response) {
     if (parsed.data.companyType !== undefined) data.companyType = parsed.data.companyType;
     if (parsed.data.dbibt !== undefined) data.dbibt = parsed.data.dbibt;
     if (parsed.data.authorizedCapital !== undefined) data.authorizedCapital = parsed.data.authorizedCapital;
-    if (parsed.data.city !== undefined) data.city = parsed.data.city;
-    if (parsed.data.region !== undefined) data.region = parsed.data.region;
-    if (parsed.data.district !== undefined) data.district = parsed.data.district;
     if (parsed.data.address !== undefined) data.address = parsed.data.address;
     if (parsed.data.telegramId !== undefined) data.telegramId = parsed.data.telegramId;
 
@@ -119,9 +110,6 @@ export async function updateCompanyHandler(req: Request, res: Response) {
         companyType: company.companyType,
         dbibt: company.dbibt,
         authorizedCapital: company.authorizedCapital,
-        city: company.city,
-        region: company.region,
-        district: company.district,
         address: company.address,
         telegramId: company.telegramId,
       },

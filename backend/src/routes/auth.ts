@@ -56,16 +56,12 @@ export async function eriLoginHandler(req: Request, res: Response) {
         update: {
           name: companyName,
           companyType: businessCategory || undefined,
-          district: district || undefined,
-          city: city || undefined,
         },
         create: {
           tin: inn,
           name: companyName,
           status: "ACTIVE",
           companyType: businessCategory || undefined,
-          district: district || undefined,
-          city: city || undefined,
         },
       });
 

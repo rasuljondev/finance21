@@ -54,9 +54,6 @@ model Company {
   companyType       String?       // Company type
   dbibt             String?       // DBIBT(SOOGU)
   authorizedCapital String?       // устав фонди суммаси
-  city              String?
-  region            String?
-  district          String?
   address           String?
 
   // Authentication credentials
