@@ -136,12 +136,11 @@ export async function syncDocumentsHandler(req: Request, res: Response) {
       const items: any[] = (candidates.find((v) => Array.isArray(v)) as any[]) || (Array.isArray(payload) ? payload : Array.isArray(didoxRes) ? (didoxRes as any[]) : []);
 
       console.log(`[backend] found ${items.length} ${dir} documents, saving to DB...`);
+      const batchStart = Date.now();
 
-      for (const doc of items) {
-        try {
+      await prisma.$transaction(
+        items.map((doc) => {
           const didoxId = String(doc?.doc_id || doc?.id || doc?.uuid || "");
-          if (!didoxId) continue;
-
           const status = mapDidoxStatusToDocumentStatus(doc?.doc_status ?? doc?.status);
           const documentNumber = doc?.name || doc?.number || doc?.doc_number || null;
           const documentDate = doc?.doc_date || doc?.docDate || doc?.createdDate || doc?.date;
@@ -151,7 +150,7 @@ export async function syncDocumentsHandler(req: Request, res: Response) {
           const contractNumber = doc?.contract_number || doc?.contract?.number || null;
           const contractDate = doc?.contract_date || doc?.contract?.date || null;
 
-          await prisma.document.upsert({
+          return prisma.document.upsert({
             where: { companyId_didoxDocumentId: { companyId: session.companyId, didoxDocumentId: didoxId } },
             update: {
               direction: dir,
@@ -183,14 +182,13 @@ export async function syncDocumentsHandler(req: Request, res: Response) {
               lastSyncedAt: new Date(),
             },
           });
+        })
+      );
 
-          if (dir === "INCOMING") synced.incoming++;
-          if (dir === "OUTGOING") synced.outgoing++;
-        } catch (itemErr) {
-          console.error(`[backend] failed to sync document ${doc?.doc_id}:`, itemErr);
-          // continue to next document
-        }
-      }
+      if (dir === "INCOMING") synced.incoming += items.length;
+      if (dir === "OUTGOING") synced.outgoing += items.length;
+
+      console.log(`[backend] DB batch for ${dir} took ${Date.now() - batchStart}ms`);
     }
 
     console.log(`[backend] sync complete. incoming: ${synced.incoming}, outgoing: ${synced.outgoing}`);
