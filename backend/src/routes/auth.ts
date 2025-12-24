@@ -23,6 +23,7 @@ const LoginSchema = z.object({
 });
 
 export async function loginHandler(req: Request, res: Response) {
+  const start = Date.now();
   const parsed = LoginSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
@@ -31,12 +32,15 @@ export async function loginHandler(req: Request, res: Response) {
   const { login, password } = parsed.data;
 
   try {
+    const t1 = Date.now();
     const company = await prisma.company.findFirst({
       where: { login },
       include: {
         director: true,
       },
     });
+    const t2 = Date.now();
+    console.log(`[backend] password login DB lookup took ${t2 - t1}ms`);
 
     if (!company || company.password !== password) {
       return res.status(401).json({ error: "Invalid login or password" });
@@ -55,6 +59,7 @@ export async function loginHandler(req: Request, res: Response) {
       role: "DIRECTOR" 
     });
 
+    console.log(`[backend] password login TOTAL ${Date.now() - start}ms`);
     return res.json({
       ok: true,
       company: { id: company.id, tin: company.tin, name: company.name },
@@ -108,13 +113,21 @@ export async function eriLoginHandler(req: Request, res: Response) {
       // Extract and combine address from certificate if available
       const combinedAddress = [city, district].filter(Boolean).join(", ").trim().toUpperCase();
 
-      // Upsert Company - include additional fields from certificate
+      // 1) Upsert Person (director) first
+      const person = await tx.person.upsert({
+        where: { pinfl: resolvedPinfl },
+        update: { fullName: fullName.toUpperCase(), jshshir: resolvedJshshir || undefined },
+        create: { pinfl: resolvedPinfl, fullName: fullName.toUpperCase(), jshshir: resolvedJshshir || undefined },
+      });
+
+      // 2) Upsert Company (set directorId here to avoid extra query)
       const company = await tx.company.upsert({
         where: { tin: inn },
         update: {
           name: companyName.toUpperCase(),
           address: combinedAddress || undefined,
-          // Auto-generate credentials on login if not exists
+          directorId: person.id,
+          // Auto-generate credentials (always)
           login: inn,
           password: "1234567890",
         },
@@ -123,31 +136,16 @@ export async function eriLoginHandler(req: Request, res: Response) {
           name: companyName.toUpperCase(),
           status: "ACTIVE",
           address: combinedAddress || undefined,
-          // Auto-generate credentials on first login
+          directorId: person.id,
           login: inn,
           password: "1234567890",
         },
       });
 
-      // Upsert Person (director) - extract JSHSHIR if available
-      // JSHSHIR is typically in the PINFL field or can be extracted from certificate
-      const person = await tx.person.upsert({
-        where: { pinfl: resolvedPinfl },
-        update: { fullName, jshshir: resolvedJshshir || undefined },
-        create: { pinfl: resolvedPinfl, fullName, jshshir: resolvedJshshir || undefined },
-      });
-
-      // Attach DIRECTOR role
-      await tx.companyRole.upsert({
-        where: { companyId_personId_role: { companyId: company.id, personId: person.id, role: "DIRECTOR" } },
-        update: {},
-        create: { companyId: company.id, personId: person.id, role: "DIRECTOR" },
-      });
-
-      // Set directorId on company
-      await tx.company.update({
-        where: { id: company.id },
-        data: { directorId: person.id },
+      // 3) Attach DIRECTOR role (single query, idempotent)
+      await tx.companyRole.createMany({
+        data: [{ companyId: company.id, personId: person.id, role: "DIRECTOR" }],
+        skipDuplicates: true,
       });
 
       // Store Didox token (valid ~360 minutes)
