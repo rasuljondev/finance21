@@ -56,11 +56,13 @@ export async function eriLoginHandler(req: Request, res: Response) {
         },
       });
 
-      // Upsert Person (director)
+      // Upsert Person (director) - extract JSHSHIR if available
+      // JSHSHIR is typically in the PINFL field or can be extracted from certificate
+      const jshshir = pinfl && pinfl.length === 14 ? pinfl : null;
       const person = await tx.person.upsert({
         where: { pinfl: resolvedPinfl },
-        update: { fullName },
-        create: { pinfl: resolvedPinfl, fullName },
+        update: { fullName, jshshir: jshshir || undefined },
+        create: { pinfl: resolvedPinfl, fullName, jshshir: jshshir || undefined },
       });
 
       // Attach DIRECTOR role
@@ -104,7 +106,12 @@ export async function eriLoginHandler(req: Request, res: Response) {
     return res.json({
       ok: true,
       company: { id: result.company.id, tin: result.company.tin, name: result.company.name },
-      person: { id: result.person.id, fullName: result.person.fullName, pinfl: result.person.pinfl },
+      person: { 
+        id: result.person.id, 
+        fullName: result.person.fullName, 
+        pinfl: result.person.pinfl,
+        jshshir: result.person.jshshir,
+      },
     });
   } catch (err: unknown) {
     console.error(`[backend] ERI login error:`, err);
@@ -124,7 +131,12 @@ export async function meHandler(req: Request, res: Response) {
     ok: true,
     session,
     company: company ? { id: company.id, tin: company.tin, name: company.name } : null,
-    person: person ? { id: person.id, fullName: person.fullName, pinfl: person.pinfl } : null,
+    person: person ? { 
+      id: person.id, 
+      fullName: person.fullName, 
+      pinfl: person.pinfl,
+      jshshir: person.jshshir,
+    } : null,
   });
 }
 

@@ -6,6 +6,7 @@ import { requireEnv } from "./config/requireEnv.js";
 import { healthHandler } from "./routes/health.js";
 import { listDocumentsHandler, syncDocumentsHandler } from "./routes/documents.js";
 import { eriLoginHandler, meHandler } from "./routes/auth.js";
+import { getCompanyHandler, updateCompanyHandler, generateCredentialsHandler } from "./routes/company.js";
 import { clearSessionCookie, requireSession } from "./auth/session.js";
 
 loadRootEnv();
@@ -28,6 +29,11 @@ app.post("/auth/logout", (_req, res) => {
 // GET /documents?direction=INCOMING|OUTGOING
 app.get("/documents", requireSession, listDocumentsHandler);
 app.post("/documents/sync", requireSession, syncDocumentsHandler);
+
+// Company management
+app.get("/company", requireSession, getCompanyHandler);
+app.put("/company", requireSession, updateCompanyHandler);
+app.post("/company/generate-credentials", requireSession, generateCredentialsHandler);
 
 const port = Number(process.env.BACKEND_PORT || "3001");
 app.listen(port, () => {

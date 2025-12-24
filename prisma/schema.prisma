@@ -47,13 +47,22 @@ model Company {
   name              String
   status            CompanyStatus @default(ACTIVE)
 
-  // Optional legal/meta fields (fill later)
+  // Legal/meta fields
   registrationDate  DateTime?
   registrationNo    String?
   activityCode      String?       // IFUT/OKED
+  companyType       String?       // Company type
+  dbibt             String?       // DBIBT(SOOGU)
+  authorizedCapital String?       // устав фонди суммаси
+  city              String?
   region            String?
   district          String?
   address           String?
+
+  // Authentication credentials
+  login             String?       // Generated login (STIR)
+  password          String?       // Generated password (registration number)
+  telegramId       String?       // Telegram user ID
 
   directorId        String?
   director          Person?       @relation("CompanyDirector", fields: [directorId], references: [id], onDelete: SetNull)
@@ -66,12 +75,14 @@ model Company {
   updatedAt         DateTime      @updatedAt
 
   @@index([tin])
+  @@index([login])
 }
 
 model Person {
   id        String      @id @default(uuid())
   pinfl     String?     @unique
   fullName  String
+  jshshir   String?     // JSHSHIR from certificate
 
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
