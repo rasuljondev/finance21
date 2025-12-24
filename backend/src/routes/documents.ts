@@ -138,19 +138,38 @@ export async function syncDocumentsHandler(req: Request, res: Response) {
       console.log(`[backend] found ${items.length} ${dir} documents, saving to DB...`);
       const batchStart = Date.now();
 
-      await prisma.$transaction(
-        items.map((doc) => {
+      // Process in small batches or individually with error handling to prevent one bad doc from stopping everything
+      let successCount = 0;
+      for (const doc of items) {
+        try {
           const didoxId = String(doc?.doc_id || doc?.id || doc?.uuid || "");
-          const status = mapDidoxStatusToDocumentStatus(doc?.doc_status ?? doc?.status);
-          const documentNumber = doc?.name || doc?.number || doc?.doc_number || null;
-          const documentDate = doc?.doc_date || doc?.docDate || doc?.createdDate || doc?.date;
-          const amount = doc?.total_sum || doc?.totalSum || doc?.sum || doc?.amount || null;
-          const counterpartyName = doc?.partnerCompany || doc?.partner_name || doc?.partner?.name || doc?.counterparty?.name || null;
-          const counterpartyStir = doc?.partnerTin || doc?.partner_tin || doc?.partner?.tin || doc?.counterparty?.tin || null;
-          const contractNumber = doc?.contract_number || doc?.contract?.number || null;
-          const contractDate = doc?.contract_date || doc?.contract?.date || null;
+          if (!didoxId) continue;
 
-          return prisma.document.upsert({
+          const status = mapDidoxStatusToDocumentStatus(doc?.doc_status ?? doc?.status);
+          const documentNumber = doc?.name || doc?.number || doc?.doc_number || doc?.document_number || null;
+          const documentDate = doc?.doc_date || doc?.docDate || doc?.createdDate || doc?.date || doc?.document_date;
+          const amount = doc?.total_sum || doc?.totalSum || doc?.sum || doc?.amount || doc?.total_amount || null;
+          
+          const counterpartyName = 
+            doc?.partnerCompany || 
+            doc?.partner_name || 
+            doc?.partner?.name || 
+            doc?.counterparty?.name || 
+            (dir === "OUTGOING" ? (doc?.buyerName || doc?.buyer_name || doc?.buyer?.name) : (doc?.sellerName || doc?.seller_name || doc?.seller?.name)) ||
+            null;
+
+          const counterpartyStir = 
+            doc?.partnerTin || 
+            doc?.partner_tin || 
+            doc?.partner?.tin || 
+            doc?.counterparty?.tin || 
+            (dir === "OUTGOING" ? (doc?.buyerTin || doc?.buyer_tin || doc?.buyer?.tin) : (doc?.sellerTin || doc?.seller_tin || doc?.seller?.tin)) ||
+            null;
+
+          const contractNumber = doc?.contract_number || doc?.contract?.number || doc?.contract_number || null;
+          const contractDate = doc?.contract_date || doc?.contract?.date || doc?.contract_date || null;
+
+          await prisma.document.upsert({
             where: { companyId_didoxDocumentId: { companyId: session.companyId, didoxDocumentId: didoxId } },
             update: {
               direction: dir,
@@ -182,13 +201,16 @@ export async function syncDocumentsHandler(req: Request, res: Response) {
               lastSyncedAt: new Date(),
             },
           });
-        })
-      );
+          successCount++;
+        } catch (itemErr) {
+          console.error(`[backend] failed to sync document ${doc?.doc_id || 'unknown'}:`, itemErr);
+        }
+      }
 
-      if (dir === "INCOMING") synced.incoming += items.length;
-      if (dir === "OUTGOING") synced.outgoing += items.length;
+      if (dir === "INCOMING") synced.incoming += successCount;
+      if (dir === "OUTGOING") synced.outgoing += successCount;
 
-      console.log(`[backend] DB batch for ${dir} took ${Date.now() - batchStart}ms`);
+      console.log(`[backend] DB processing for ${dir} took ${Date.now() - batchStart}ms`);
     }
 
     console.log(`[backend] sync complete. incoming: ${synced.incoming}, outgoing: ${synced.outgoing}`);
