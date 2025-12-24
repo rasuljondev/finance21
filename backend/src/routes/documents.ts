@@ -61,7 +61,7 @@ export async function listDocumentsHandler(req: Request, res: Response) {
     });
 
     return res.json({
-      documents: docs.map((d) => {
+      documents: docs.map((d: any) => {
         const raw: any = d.didoxData || {};
         return {
           id: d.didoxDocumentId,

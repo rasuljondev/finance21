@@ -16,26 +16,28 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/finance21 || exit
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
             
-            # 1. Main Next.js App
+            # 1. Prisma (Generate clients for both root and backend)
             npm install
+            npx prisma generate
+            
+            # 2. Main Next.js App
             npm run build
             pm2 restart finance21-frontend || pm2 start npm --name "finance21-frontend" -- run start
             
-            # 2. Backend Service
+            # 3. Backend Service
             cd backend
             npm install
             npm run build
             pm2 restart finance21-backend || pm2 start dist/index.js --name "finance21-backend"
             
-            # 3. Telegram Bot
+            # 4. Telegram Bot
             cd ../telegrambot
             npm install
             npm run build
             pm2 restart finance21-bot || pm2 start dist/index.js --name "finance21-bot"
             
-            # 4. Prisma (if needed)
-            cd ..
-            npx prisma generate
-
+            # Save PM2 state
+            pm2 save
