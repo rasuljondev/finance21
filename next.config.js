@@ -8,11 +8,7 @@ const nextConfig = {
     ignoreDuringBuilds: false,
     dirs: ['src'],
   },
-  // Disable Next.js development indicators
-  devIndicators: {
-    buildActivity: false,
-    buildActivityPosition: 'bottom-right',
-  },
+  // Disable Next.js development indicators (removed deprecated options)
   async rewrites() {
     const backendUrl =
       process.env.NODE_ENV === "production"

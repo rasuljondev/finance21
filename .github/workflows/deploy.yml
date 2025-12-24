@@ -19,25 +19,39 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             
-            # 1. Prisma (Generate clients for both root and backend)
+            # 1. Install root dependencies
             npm install
+            
+            # 2. Prisma: Push schema to database and generate clients
+            echo "Pushing Prisma schema to database..."
+            npx prisma db push --accept-data-loss || echo "Database push failed, continuing..."
             npx prisma generate
             
-            # 2. Main Next.js App
+            # 3. Build and start Frontend
+            echo "Building Next.js frontend..."
             npm run build
-            pm2 restart finance21-frontend || pm2 start npm --name "finance21-frontend" -- run start
+            pm2 stop finance21-frontend || true
+            pm2 delete finance21-frontend || true
+            pm2 start npm --name "finance21-frontend" -- run start
             
-            # 3. Backend Service
+            # 4. Backend Service
+            echo "Building backend..."
             cd backend
             npm install
             npm run build
-            pm2 restart finance21-backend || pm2 start dist/index.js --name "finance21-backend"
+            pm2 stop finance21-backend || true
+            pm2 delete finance21-backend || true
+            pm2 start dist/index.js --name "finance21-backend"
             
-            # 4. Telegram Bot
+            # 5. Telegram Bot
+            echo "Building telegram bot..."
             cd ../telegrambot
             npm install
             npm run build
-            pm2 restart finance21-bot || pm2 start dist/index.js --name "finance21-bot"
+            pm2 stop finance21-bot || true
+            pm2 delete finance21-bot || true
+            pm2 start dist/index.js --name "finance21-bot"
             
             # Save PM2 state
             pm2 save
+            pm2 list
