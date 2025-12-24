@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import {
   Settings,
   Building2,
-  Calendar,
   Hash,
   MapPin,
   User,
@@ -15,7 +14,7 @@ import {
   CheckCircle2,
   MessageCircle,
   HelpCircle,
-  DollarSign,
+  Edit2,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -53,6 +52,7 @@ export default function SettingsPage() {
   const [generating, setGenerating] = useState(false);
   const [company, setCompany] = useState<CompanyData | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -89,8 +89,12 @@ export default function SettingsPage() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const response = await apiClient.put("/company", formData);
+      const response = await apiClient.put("/company", {
+        address: formData.address.toUpperCase(),
+        telegramId: formData.telegramId,
+      });
       setCompany(response.data.company);
+      setIsEditing(false);
       showSuccess("Company information updated successfully");
     } catch (err: any) {
       console.error("Error updating company:", err);
@@ -166,9 +170,15 @@ export default function SettingsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="primary" onClick={handleSave} isLoading={saving} leftIcon={<Save className="w-4 h-4" />}>
-            Save Changes
-          </Button>
+          {!isEditing ? (
+            <Button variant="outline" onClick={() => setIsEditing(true)} leftIcon={<Edit2 className="w-4 h-4" />}>
+              Edit
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={handleSave} isLoading={saving} leftIcon={<Save className="w-4 h-4" />}>
+              Update
+            </Button>
+          )}
         </div>
       </div>
 
@@ -181,8 +191,8 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-4">
-            {/* Row 1: STIR and Name side by side */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Row 1: STIR, Name, and Address side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div>
                 <Input
                   label="Company STIR (TIN)"
@@ -194,52 +204,27 @@ export default function SettingsPage() {
               <div>
                 <Input 
                   label="Company Name" 
-                  value={company.name.toUpperCase()} 
+                  value={(company.name || "").toUpperCase()} 
                   disabled 
                   leftIcon={<Building2 className="w-4 h-4" />} 
                 />
               </div>
-            </div>
-
-            {/* Row 2: Address */}
-            <div>
-              <Input
-                label="Address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Enter full address"
-                leftIcon={<MapPin className="w-4 h-4" />}
-              />
-            </div>
-
-            {/* Telegram ID */}
-            <div className="relative">
-              <Input
-                label="Telegram ID"
-                value={formData.telegramId}
-                onChange={(e) => setFormData({ ...formData, telegramId: e.target.value })}
-                placeholder="Enter Telegram User ID"
-                leftIcon={<MessageCircle className="w-4 h-4" />}
-                helperText="Get your ID from Finance21_bot on Telegram"
-              />
-              <div className="group relative">
-                <HelpCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 cursor-help" />
-                <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-slate-900 dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                  <p className="font-bold mb-1">How to get your Telegram ID:</p>
-                  <ol className="list-decimal list-inside space-y-1">
-                    <li>Open Telegram</li>
-                    <li>Search for <strong>Finance21_bot</strong></li>
-                    <li>Start a conversation with the bot</li>
-                    <li>Use <code>/start</code> command</li>
-                    <li>Copy your User ID from the message</li>
-                  </ol>
-                </div>
+              <div>
+                <Input
+                  label="Address"
+                  value={isEditing ? formData.address : (company.address || "").toUpperCase()}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Enter full address"
+                  leftIcon={<MapPin className="w-4 h-4" />}
+                  disabled={!isEditing}
+                  className={cn(!isEditing && "bg-slate-50 dark:bg-white/[0.01] cursor-not-allowed")}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Director Information - One Row */}
+        {/* Director Information - Now includes Telegram ID */}
         {company.director && (
           <div className="bg-white dark:bg-[#111322] rounded-3xl border border-slate-200 dark:border-white/5 p-6 shadow-sm space-y-6">
             <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-white/5">
@@ -247,11 +232,11 @@ export default function SettingsPage() {
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Director Information</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <Input 
                   label="Full Name" 
-                  value={company.director.fullName.toUpperCase()} 
+                  value={(company.director.fullName || "").toUpperCase()} 
                   disabled 
                   leftIcon={<User className="w-4 h-4" />} 
                 />
@@ -266,6 +251,33 @@ export default function SettingsPage() {
                   <Input label="JSHSHIR" value={company.director.jshshir} disabled leftIcon={<Hash className="w-4 h-4" />} />
                 </div>
               )}
+              <div className="relative">
+                <Input
+                  label="Telegram ID"
+                  value={isEditing ? formData.telegramId : (company.telegramId || "")}
+                  onChange={(e) => setFormData({ ...formData, telegramId: e.target.value })}
+                  placeholder="Enter Telegram User ID"
+                  leftIcon={<MessageCircle className="w-4 h-4" />}
+                  disabled={!isEditing}
+                  className={cn(!isEditing && "bg-slate-50 dark:bg-white/[0.01] cursor-not-allowed")}
+                  helperText={isEditing ? "Get your ID from Finance21_bot" : undefined}
+                />
+                {isEditing && (
+                  <div className="group relative">
+                    <HelpCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 cursor-help" />
+                    <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-slate-900 dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                      <p className="font-bold mb-1">How to get your Telegram ID:</p>
+                      <ol className="list-decimal list-inside space-y-1">
+                        <li>Open Telegram</li>
+                        <li>Search for <strong>Finance21_bot</strong></li>
+                        <li>Start a conversation with the bot</li>
+                        <li>Use <code>/start</code> command</li>
+                        <li>Copy your User ID from the message</li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -304,7 +316,7 @@ export default function SettingsPage() {
               <div>
                 <Input
                   label="Password"
-                  type="password"
+                  type="text" // Show as plain text as requested
                   value={company.password || ""}
                   disabled
                   leftIcon={<Key className="w-4 h-4" />}

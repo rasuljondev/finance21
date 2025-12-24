@@ -50,18 +50,23 @@ export async function eriLoginHandler(req: Request, res: Response) {
     const dbStart = Date.now();
     
     const result = await prisma.$transaction(async (tx) => {
+      // Extract and combine address from certificate if available
+      const combinedAddress = [city, district].filter(Boolean).join(", ").trim();
+
       // Upsert Company - include additional fields from certificate
       const company = await tx.company.upsert({
         where: { tin: inn },
         update: {
           name: companyName,
           companyType: businessCategory || undefined,
+          address: combinedAddress || undefined,
         },
         create: {
           tin: inn,
           name: companyName,
           status: "ACTIVE",
           companyType: businessCategory || undefined,
+          address: combinedAddress || undefined,
         },
       });
 
