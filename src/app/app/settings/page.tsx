@@ -298,61 +298,45 @@ export default function SettingsPage() {
                   disabled
                   leftIcon={<Hash className="w-4 h-4" />}
                   rightIcon={
-                    company.login ? (
-                      <button
-                        onClick={() => copyToClipboard(company.login!, "Login")}
-                        className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors"
-                      >
-                        {copied === "Login" ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <Copy className="w-4 h-4 text-slate-400" />
-                        )}
-                      </button>
-                    ) : null
+                    <button
+                      onClick={() => copyToClipboard(company.login || company.tin, "Login")}
+                      className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors"
+                    >
+                      {copied === "Login" ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-slate-400" />
+                      )}
+                    </button>
                   }
                 />
               </div>
               <div>
                 <Input
                   label="Password"
-                  type="text" // Show as plain text as requested
-                  value={company.password || ""}
+                  type="text"
+                  value={company.password || "1234567890"}
                   disabled
                   leftIcon={<Key className="w-4 h-4" />}
                   rightIcon={
-                    company.password ? (
-                      <button
-                        onClick={() => copyToClipboard(company.password!, "Password")}
-                        className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors"
-                      >
-                        {copied === "Password" ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <Copy className="w-4 h-4 text-slate-400" />
-                        )}
-                      </button>
-                    ) : null
+                    <button
+                      onClick={() => copyToClipboard(company.password || "1234567890", "Password")}
+                      className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors"
+                    >
+                      {copied === "Password" ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-slate-400" />
+                      )}
+                    </button>
                   }
                 />
               </div>
             </div>
 
-            <Button
-              variant="primary"
-              onClick={handleGenerateCredentials}
-              isLoading={generating}
-              leftIcon={<Key className="w-4 h-4" />}
-              className="w-full"
-            >
-              {company.login ? "Regenerate Credentials" : "Generate Credentials"}
-            </Button>
-
-            {company.login && (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Login is your STIR ({company.tin}). Password: 1234567890
-              </p>
-            )}
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Login is your STIR ({company.tin}). Password: 1234567890
+            </p>
           </div>
         </div>
       </div>
