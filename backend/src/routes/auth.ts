@@ -58,7 +58,6 @@ export async function eriLoginHandler(req: Request, res: Response) {
         where: { tin: inn },
         update: {
           name: companyName.toUpperCase(),
-          companyType: businessCategory || undefined,
           address: combinedAddress || undefined,
           // Auto-generate credentials on login if not exists
           login: inn,
@@ -68,7 +67,6 @@ export async function eriLoginHandler(req: Request, res: Response) {
           tin: inn,
           name: companyName.toUpperCase(),
           status: "ACTIVE",
-          companyType: businessCategory || undefined,
           address: combinedAddress || undefined,
           // Auto-generate credentials on first login
           login: inn,
