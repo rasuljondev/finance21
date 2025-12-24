@@ -53,7 +53,7 @@ model Company {
   address           String?
 
   // Authentication credentials
-  login             String?       // Generated login (STIR)
+  login             String?       @unique // Generated login (STIR)
   password          String?       // Generated password (registration number)
   telegramId       String?       // Telegram user ID
 
