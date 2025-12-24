@@ -65,9 +65,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     load();
   }, []);
 
-  const login = async (_login: string, _password: string) => {
-    // Placeholder for later (per your decision: first time is ERI-only)
-    throw new Error("Login/Password will be implemented later. Please use E-IMZO.");
+  const login = async (login: string, password: string) => {
+    // Backend will: verify login/pass -> set httpOnly session cookie
+    await apiClient.post("/auth/login", { login, password });
+    // Rehydrate state
+    const res = await apiClient.get("/auth/me");
+    const data = res.data;
+    setCompany(data.company || null);
+    setPerson(data.person || null);
+    setUser(data?.session?.companyTin ? { taxId: data.session.companyTin, fullName: data.person?.fullName } : null);
+    router.push("/app/dashboard");
   };
 
   const loginWithERI = async (payload: ERILoginPayload) => {

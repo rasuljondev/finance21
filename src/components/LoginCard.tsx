@@ -53,7 +53,7 @@ export default function LoginCard() {
             <Input
               name="taxId"
               type="text"
-              placeholder="Login (coming soon)"
+              placeholder="Login (STIR)"
               autoComplete="username"
               value={taxId}
               onChange={(e) => setTaxId(e.target.value)}
@@ -63,7 +63,7 @@ export default function LoginCard() {
             <Input
               name="password"
               type="password"
-              placeholder="Password (coming soon)"
+              placeholder="Password"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

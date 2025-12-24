@@ -5,7 +5,7 @@ import { loadRootEnv } from "./config/env.js";
 import { requireEnv } from "./config/requireEnv.js";
 import { healthHandler } from "./routes/health.js";
 import { listDocumentsHandler, syncDocumentsHandler } from "./routes/documents.js";
-import { eriLoginHandler, meHandler } from "./routes/auth.js";
+import { eriLoginHandler, meHandler, loginHandler } from "./routes/auth.js";
 import { getCompanyHandler, updateCompanyHandler, generateCredentialsHandler } from "./routes/company.js";
 import { clearSessionCookie, requireSession } from "./auth/session.js";
 
@@ -18,6 +18,7 @@ app.use(cors({ origin: true, credentials: true }));
 
 app.get("/health", healthHandler);
 
+app.post("/auth/login", loginHandler);
 app.post("/auth/eri/login", eriLoginHandler);
 app.get("/auth/me", requireSession, meHandler);
 app.post("/auth/logout", (_req, res) => {

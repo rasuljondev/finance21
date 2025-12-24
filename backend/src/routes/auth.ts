@@ -17,6 +17,61 @@ const EriLoginSchema = z.object({
   businessCategory: z.string().optional(),
 });
 
+const LoginSchema = z.object({
+  login: z.string().min(3),
+  password: z.string().min(1),
+});
+
+export async function loginHandler(req: Request, res: Response) {
+  const parsed = LoginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const { login, password } = parsed.data;
+
+  try {
+    const company = await prisma.company.findFirst({
+      where: { login },
+      include: {
+        director: true,
+      },
+    });
+
+    if (!company || company.password !== password) {
+      return res.status(401).json({ error: "Invalid login or password" });
+    }
+
+    if (!company.director) {
+      return res.status(400).json({ error: "Company has no director assigned. Please login with ERI first." });
+    }
+
+    // Issue Finance21 session cookie
+    console.log(`[backend] login successful for ${login}, issuing session cookie...`);
+    setSessionCookie(res, { 
+      companyId: company.id, 
+      companyTin: company.tin, 
+      personId: company.director.id, 
+      role: "DIRECTOR" 
+    });
+
+    return res.json({
+      ok: true,
+      company: { id: company.id, tin: company.tin, name: company.name },
+      person: { 
+        id: company.director.id, 
+        fullName: company.director.fullName, 
+        pinfl: company.director.pinfl,
+        jshshir: company.director.jshshir,
+      },
+    });
+  } catch (err: unknown) {
+    console.error(`[backend] Login error:`, err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: "Login failed", message: msg });
+  }
+}
+
 export async function eriLoginHandler(req: Request, res: Response) {
   const start = Date.now();
   const parsed = EriLoginSchema.safeParse(req.body);
