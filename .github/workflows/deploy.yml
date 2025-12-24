@@ -1,0 +1,41 @@
+name: Deploy Finance21
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/finance21 || exit
+            git pull origin main
+            
+            # 1. Main Next.js App
+            npm install
+            npm run build
+            pm2 restart finance21-frontend || pm2 start npm --name "finance21-frontend" -- run start
+            
+            # 2. Backend Service
+            cd backend
+            npm install
+            npm run build
+            pm2 restart finance21-backend || pm2 start dist/index.js --name "finance21-backend"
+            
+            # 3. Telegram Bot
+            cd ../telegrambot
+            npm install
+            npm run build
+            pm2 restart finance21-bot || pm2 start dist/index.js --name "finance21-bot"
+            
+            # 4. Prisma (if needed)
+            cd ..
+            npx prisma generate
+

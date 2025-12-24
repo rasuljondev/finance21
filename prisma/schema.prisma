@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Enums
+enum CompanyStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum CompanyRoleType {
+  DIRECTOR
+  ACCOUNTANT
+}
+
+enum DocumentDirection {
+  INCOMING
+  OUTGOING
+  SENT
+}
+
+enum DocumentStatus {
+  DRAFT
+  PENDING
+  SIGNED
+  REJECTED
+  CANCELLED
+}
+
+model Company {
+  id                String        @id @default(uuid())
+  tin               String        @unique // STIR
+  name              String
+  status            CompanyStatus @default(ACTIVE)
+
+  // Optional legal/meta fields (fill later)
+  registrationDate  DateTime?
+  registrationNo    String?
+  activityCode      String?       // IFUT/OKED
+  region            String?
+  district          String?
+  address           String?
+
+  directorId        String?
+  director          Person?       @relation("CompanyDirector", fields: [directorId], references: [id], onDelete: SetNull)
+
+  roles             CompanyRole[]
+  didoxToken        DidoxToken?
+  documents         Document[]
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([tin])
+}
+
+model Person {
+  id        String      @id @default(uuid())
+  pinfl     String?     @unique
+  fullName  String
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  roles     CompanyRole[]
+  directs   Company[]   @relation("CompanyDirector")
+}
+
+model CompanyRole {
+  id        String          @id @default(uuid())
+  companyId String
+  personId  String
+  role      CompanyRoleType
+
+  company   Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  person    Person          @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime        @default(now())
+
+  @@unique([companyId, personId, role])
+  @@index([companyId])
+  @@index([personId])
+  @@index([role])
+}
+
+model DidoxToken {
+  id        String   @id @default(uuid())
+  companyId String   @unique
+  token     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id                  String            @id @default(cuid())
+  companyId           String
+  didoxDocumentId     String            // ID from Didox API
+  direction           DocumentDirection
+  status              DocumentStatus    @default(PENDING)
+  
+  // Document details
+  documentNumber      String?
+  documentDate        DateTime?
+  amount              Decimal?          @db.Decimal(18, 2)
+  currency            String?           @default("UZS")
+  
+  // Counterparty information
+  counterpartyName    String?
+  counterpartyStir    String?
+  
+  // Contract information
+  contractDate        DateTime?
+  contractNumber      String?
+  
+  // Raw data from Didox (JSON)
+  didoxData           Json?
+  
+  // Sync metadata
+  lastSyncedAt        DateTime          @default(now())
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  company             Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, didoxDocumentId])
+  @@index([companyId])
+  @@index([direction])
+  @@index([status])
+  @@index([documentDate])
+  @@index([counterpartyStir])
+}
