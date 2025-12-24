@@ -5,10 +5,6 @@ import { getSession } from "../auth/session.js";
 
 const UpdateCompanySchema = z.object({
   registrationDate: z.string().optional().nullable(),
-  registrationNo: z.string().optional().nullable(),
-  companyType: z.string().optional().nullable(),
-  dbibt: z.string().optional().nullable(),
-  authorizedCapital: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   telegramId: z.string().optional().nullable(),
 });
@@ -46,11 +42,7 @@ export async function getCompanyHandler(req: Request, res: Response) {
         name: company.name,
         status: company.status,
         registrationDate: company.registrationDate,
-        registrationNo: company.registrationNo,
         activityCode: company.activityCode,
-        companyType: company.companyType,
-        dbibt: company.dbibt,
-        authorizedCapital: company.authorizedCapital,
         address: company.address,
         login: company.login,
         telegramId: company.telegramId,
@@ -87,10 +79,6 @@ export async function updateCompanyHandler(req: Request, res: Response) {
     if (parsed.data.registrationDate !== undefined) {
       data.registrationDate = parsed.data.registrationDate ? new Date(parsed.data.registrationDate) : null;
     }
-    if (parsed.data.registrationNo !== undefined) data.registrationNo = parsed.data.registrationNo;
-    if (parsed.data.companyType !== undefined) data.companyType = parsed.data.companyType;
-    if (parsed.data.dbibt !== undefined) data.dbibt = parsed.data.dbibt;
-    if (parsed.data.authorizedCapital !== undefined) data.authorizedCapital = parsed.data.authorizedCapital;
     if (parsed.data.address !== undefined) data.address = parsed.data.address;
     if (parsed.data.telegramId !== undefined) data.telegramId = parsed.data.telegramId;
 
@@ -106,10 +94,6 @@ export async function updateCompanyHandler(req: Request, res: Response) {
         tin: company.tin,
         name: company.name,
         registrationDate: company.registrationDate,
-        registrationNo: company.registrationNo,
-        companyType: company.companyType,
-        dbibt: company.dbibt,
-        authorizedCapital: company.authorizedCapital,
         address: company.address,
         telegramId: company.telegramId,
       },
@@ -139,12 +123,12 @@ export async function generateCredentialsHandler(req: Request, res: Response) {
       return res.status(404).json({ error: "Company not found" });
     }
 
-    // Generate login = STIR, password = registration number (or provided password)
+    // Generate login = STIR, password = provided password
     const login = company.tin;
-    const password = parsed.data.password || company.registrationNo || "";
+    const password = parsed.data.password || "";
 
     if (!password) {
-      return res.status(400).json({ error: "Registration number is required to generate password" });
+      return res.status(400).json({ error: "Password is required" });
     }
 
     const updated = await prisma.company.update({

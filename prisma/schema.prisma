@@ -49,11 +49,7 @@ model Company {
 
   // Legal/meta fields
   registrationDate  DateTime?
-  registrationNo    String?
   activityCode      String?       // IFUT/OKED
-  companyType       String?       // Company type
-  dbibt             String?       // DBIBT(SOOGU)
-  authorizedCapital String?       // устав фонди суммаси
   address           String?
 
   // Authentication credentials

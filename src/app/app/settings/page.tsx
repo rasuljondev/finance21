@@ -30,11 +30,7 @@ interface CompanyData {
   name: string;
   status: string;
   registrationDate: string | null;
-  registrationNo: string | null;
   activityCode: string | null;
-  companyType: string | null;
-  dbibt: string | null;
-  authorizedCapital: string | null;
   address: string | null;
   login: string | null;
   password: string | null;
@@ -60,11 +56,6 @@ export default function SettingsPage() {
 
   // Form state
   const [formData, setFormData] = useState({
-    registrationDate: "",
-    registrationNo: "",
-    companyType: "",
-    dbibt: "",
-    authorizedCapital: "",
     address: "",
     telegramId: "",
   });
@@ -76,13 +67,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (company) {
       setFormData({
-        registrationDate: company.registrationDate
-          ? new Date(company.registrationDate).toISOString().split("T")[0]
-          : "",
-        registrationNo: company.registrationNo || "",
-        companyType: company.companyType || "",
-        dbibt: company.dbibt || "",
-        authorizedCapital: company.authorizedCapital || "",
         address: company.address || "",
         telegramId: company.telegramId || "",
       });
@@ -117,15 +101,11 @@ export default function SettingsPage() {
   };
 
   const handleGenerateCredentials = async () => {
-    if (!company?.registrationNo) {
-      showError("Registration number is required. Please fill it in first.");
-      return;
-    }
-
     try {
       setGenerating(true);
+      // Generate password as 1234567890 as requested
       const response = await apiClient.post("/company/generate-credentials", {
-        password: company.registrationNo,
+        password: "1234567890",
       });
       setCompany((prev) =>
         prev
@@ -192,7 +172,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6">
         {/* Company Information */}
         <div className="bg-white dark:bg-[#111322] rounded-3xl border border-slate-200 dark:border-white/5 p-6 shadow-sm space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-white/5">
@@ -201,92 +181,38 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <Input
-                label="Company STIR (TIN)"
-                value={company.tin}
-                disabled
-                leftIcon={<Hash className="w-4 h-4" />}
-              />
+            {/* Row 1: STIR and Name side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Input
+                  label="Company STIR (TIN)"
+                  value={company.tin}
+                  disabled
+                  leftIcon={<Hash className="w-4 h-4" />}
+                />
+              </div>
+              <div>
+                <Input 
+                  label="Company Name" 
+                  value={company.name.toUpperCase()} 
+                  disabled 
+                  leftIcon={<Building2 className="w-4 h-4" />} 
+                />
+              </div>
             </div>
 
-            <div>
-              <Input 
-                label="Company Name" 
-                value={company.name.toUpperCase()} 
-                disabled 
-                leftIcon={<Building2 className="w-4 h-4" />} 
-              />
-            </div>
-
-            <div>
-              <Input
-                label="Registration Number"
-                value={formData.registrationNo}
-                onChange={(e) => setFormData({ ...formData, registrationNo: e.target.value })}
-                leftIcon={<Hash className="w-4 h-4" />}
-                placeholder="Enter registration number"
-              />
-            </div>
-
-            <div>
-              <Input
-                label="Registration Date"
-                type="date"
-                value={formData.registrationDate}
-                onChange={(e) => setFormData({ ...formData, registrationDate: e.target.value })}
-                leftIcon={<Calendar className="w-4 h-4" />}
-              />
-            </div>
-
-            <div>
-              <Input
-                label="Company Type"
-                value={formData.companyType}
-                onChange={(e) => setFormData({ ...formData, companyType: e.target.value })}
-                placeholder="Enter company type"
-              />
-            </div>
-
-            <div>
-              <Input
-                label="DBIBT (SOOGU)"
-                value={formData.dbibt}
-                onChange={(e) => setFormData({ ...formData, dbibt: e.target.value })}
-                placeholder="Enter DBIBT code"
-                helperText="Давлат бошқаруви идораларини белгилаш тизими"
-              />
-            </div>
-
-            <div>
-              <Input
-                label="Authorized Capital (устав фонди суммаси)"
-                value={formData.authorizedCapital}
-                onChange={(e) => setFormData({ ...formData, authorizedCapital: e.target.value })}
-                placeholder="Enter authorized capital amount"
-                leftIcon={<DollarSign className="w-4 h-4" />}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Location & Contact */}
-        <div className="bg-white dark:bg-[#111322] rounded-3xl border border-slate-200 dark:border-white/5 p-6 shadow-sm space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-white/5">
-            <MapPin className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Location & Contact</h2>
-          </div>
-
-          <div className="space-y-4">
+            {/* Row 2: Address */}
             <div>
               <Input
                 label="Address"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 placeholder="Enter full address"
+                leftIcon={<MapPin className="w-4 h-4" />}
               />
             </div>
 
+            {/* Telegram ID */}
             <div className="relative">
               <Input
                 label="Telegram ID"
@@ -313,7 +239,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Director Information */}
+        {/* Director Information - One Row */}
         {company.director && (
           <div className="bg-white dark:bg-[#111322] rounded-3xl border border-slate-200 dark:border-white/5 p-6 shadow-sm space-y-6">
             <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-white/5">
@@ -321,7 +247,7 @@ export default function SettingsPage() {
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Director Information</h2>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Input 
                   label="Full Name" 
@@ -330,13 +256,11 @@ export default function SettingsPage() {
                   leftIcon={<User className="w-4 h-4" />} 
                 />
               </div>
-
               {company.director.pinfl && (
                 <div>
                   <Input label="PINFL" value={company.director.pinfl} disabled leftIcon={<Hash className="w-4 h-4" />} />
                 </div>
               )}
-
               {company.director.jshshir && (
                 <div>
                   <Input label="JSHSHIR" value={company.director.jshshir} disabled leftIcon={<Hash className="w-4 h-4" />} />
@@ -346,7 +270,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Credentials */}
+        {/* Login Credentials - One Row */}
         <div className="bg-white dark:bg-[#111322] rounded-3xl border border-slate-200 dark:border-white/5 p-6 shadow-sm space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-white/5">
             <Key className="w-5 h-5 text-blue-600" />
@@ -354,51 +278,52 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <Input
-                label="Login (STIR)"
-                value={company.login || company.tin}
-                disabled
-                leftIcon={<Hash className="w-4 h-4" />}
-                rightIcon={
-                  company.login ? (
-                    <button
-                      onClick={() => copyToClipboard(company.login!, "Login")}
-                      className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors"
-                    >
-                      {copied === "Login" ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4 text-slate-400" />
-                      )}
-                    </button>
-                  ) : null
-                }
-              />
-            </div>
-
-            <div>
-              <Input
-                label="Password (Registration Number)"
-                type="password"
-                value={company.password || ""}
-                disabled
-                leftIcon={<Key className="w-4 h-4" />}
-                rightIcon={
-                  company.password ? (
-                    <button
-                      onClick={() => copyToClipboard(company.password!, "Password")}
-                      className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors"
-                    >
-                      {copied === "Password" ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4 text-slate-400" />
-                      )}
-                    </button>
-                  ) : null
-                }
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Input
+                  label="Login (STIR)"
+                  value={company.login || company.tin}
+                  disabled
+                  leftIcon={<Hash className="w-4 h-4" />}
+                  rightIcon={
+                    company.login ? (
+                      <button
+                        onClick={() => copyToClipboard(company.login!, "Login")}
+                        className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors"
+                      >
+                        {copied === "Login" ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-slate-400" />
+                        )}
+                      </button>
+                    ) : null
+                  }
+                />
+              </div>
+              <div>
+                <Input
+                  label="Password"
+                  type="password"
+                  value={company.password || ""}
+                  disabled
+                  leftIcon={<Key className="w-4 h-4" />}
+                  rightIcon={
+                    company.password ? (
+                      <button
+                        onClick={() => copyToClipboard(company.password!, "Password")}
+                        className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors"
+                      >
+                        {copied === "Password" ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-slate-400" />
+                        )}
+                      </button>
+                    ) : null
+                  }
+                />
+              </div>
             </div>
 
             <Button
@@ -413,12 +338,11 @@ export default function SettingsPage() {
 
             {company.login && (
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Login is your STIR ({company.tin}). Password is your registration number.
+                Login is your STIR ({company.tin}). Password: 1234567890
               </p>
             )}
           </div>
         </div>
-
       </div>
     </div>
   );
