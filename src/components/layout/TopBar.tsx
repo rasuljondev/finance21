@@ -91,7 +91,7 @@ export default function TopBar() {
               <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">
                 Company
               </span>
-              <span className="text-sm font-black text-slate-900 dark:text-white leading-none mt-0.5">
+              <span className="text-sm font-black text-slate-900 dark:text-white leading-none mt-0.5 uppercase">
                 {company.name.toUpperCase()}
               </span>
             </div>
@@ -100,8 +100,8 @@ export default function TopBar() {
                 <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">
                   Director
                 </span>
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 leading-none mt-0.5">
-                  {person.fullName}
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 leading-none mt-0.5 uppercase">
+                  {person.fullName.toUpperCase()}
                 </span>
               </div>
             )}
