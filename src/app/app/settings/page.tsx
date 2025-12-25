@@ -80,7 +80,8 @@ export default function SettingsPage() {
     try {
       const res = await apiClient.get("/accountants");
       if (res.data.ok) {
-        setAllAccountants(res.data.accountants);
+        console.log("Fetched accountants:", res.data.accountants);
+        setAllAccountants(res.data.accountants || []);
       }
     } catch (err) {
       console.error("Error fetching accountants:", err);
@@ -418,7 +419,10 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {allAccountants
-                  .filter((acc) => !company.accountants?.some((a) => a.id === acc.id))
+                  .filter((acc) => {
+                    const alreadyAssigned = company.accountants?.some((a) => a.id === acc.id);
+                    return !alreadyAssigned;
+                  })
                   .map((acc) => (
                     <button
                       key={acc.id}
@@ -429,9 +433,15 @@ export default function SettingsPage() {
                       <div className="text-sm text-slate-500 dark:text-slate-400">Login: {acc.login}</div>
                     </button>
                   ))}
-                {allAccountants.filter((acc) => !company.accountants?.some((a) => a.id === acc.id)).length === 0 && (
+                {allAccountants.length > 0 && 
+                 allAccountants.filter((acc) => !company.accountants?.some((a) => a.id === acc.id)).length === 0 && (
                   <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
                     All accountants are already assigned
+                  </p>
+                )}
+                {allAccountants.length === 0 && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                    No accountants created yet. Create them in Superadmin.
                   </p>
                 )}
               </div>
