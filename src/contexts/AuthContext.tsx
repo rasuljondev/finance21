@@ -71,10 +71,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = res.data;
     
     if (data.ok) {
-      setCompany(data.company || null);
-      setPerson(data.person || null);
-      setUser(data.company?.tin ? { taxId: data.company.tin, fullName: data.person?.fullName } : null);
-      router.push("/app/dashboard");
+      // Route based on role
+      if (data.role === "SUPERADMIN") {
+        router.push("/superadmin/dashboard");
+      } else {
+        setCompany(data.company || null);
+        setPerson(data.person || null);
+        setUser(data.company?.tin ? { taxId: data.company.tin, fullName: data.person?.fullName } : null);
+        router.push("/app/dashboard");
+      }
     }
   };
 

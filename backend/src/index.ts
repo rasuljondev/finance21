@@ -7,7 +7,8 @@ import { healthHandler } from "./routes/health.js";
 import { listDocumentsHandler, syncDocumentsHandler } from "./routes/documents.js";
 import { eriLoginHandler, meHandler, loginHandler } from "./routes/auth.js";
 import { getCompanyHandler, updateCompanyHandler, generateCredentialsHandler } from "./routes/company.js";
-import { clearSessionCookie, requireSession } from "./auth/session.js";
+import { getCompaniesHandler } from "./routes/superadmin.js";
+import { clearSessionCookie, requireSession, requireSuperadmin } from "./auth/session.js";
 
 loadRootEnv();
 
@@ -35,6 +36,9 @@ app.post("/documents/sync", requireSession, syncDocumentsHandler);
 app.get("/company", requireSession, getCompanyHandler);
 app.put("/company", requireSession, updateCompanyHandler);
 app.post("/company/generate-credentials", requireSession, generateCredentialsHandler);
+
+// Superadmin routes
+app.get("/superadmin/companies", requireSession, requireSuperadmin, getCompaniesHandler);
 
 const port = Number(process.env.BACKEND_PORT || "3001");
 app.listen(port, () => {

@@ -32,6 +32,25 @@ export async function loginHandler(req: Request, res: Response) {
   const { login, password } = parsed.data;
 
   try {
+    // Check for superadmin credentials first
+    const SUPERADMIN_LOGIN = "superadmin";
+    const SUPERADMIN_PASSWORD = "2200880rr#";
+    if (login === SUPERADMIN_LOGIN && password === SUPERADMIN_PASSWORD) {
+      console.log(`[backend] superadmin login successful, issuing session cookie...`);
+      setSessionCookie(res, {
+        companyId: "superadmin",
+        companyTin: "SUPERADMIN",
+        personId: "superadmin",
+        role: "SUPERADMIN",
+      });
+
+      console.log(`[backend] superadmin login TOTAL ${Date.now() - start}ms`);
+      return res.json({
+        ok: true,
+        role: "SUPERADMIN",
+      });
+    }
+
     const t1 = Date.now();
     const company = await prisma.company.findFirst({
       where: { login },
@@ -62,6 +81,7 @@ export async function loginHandler(req: Request, res: Response) {
     console.log(`[backend] password login TOTAL ${Date.now() - start}ms`);
     return res.json({
       ok: true,
+      role: "DIRECTOR",
       company: { id: company.id, tin: company.tin, name: company.name },
       person: { 
         id: company.director.id, 
@@ -175,6 +195,7 @@ export async function eriLoginHandler(req: Request, res: Response) {
 
     return res.json({
       ok: true,
+      role: "DIRECTOR",
       company: { id: result.company.id, tin: result.company.tin, name: result.company.name },
       person: { 
         id: result.person.id, 
@@ -191,23 +212,42 @@ export async function eriLoginHandler(req: Request, res: Response) {
 }
 
 export async function meHandler(req: Request, res: Response) {
-  const session = (req as any).session as any;
-  if (!session) return res.status(401).json({ error: "Not authenticated" });
+  try {
+    const session = (req as any).session as any;
+    if (!session) return res.status(401).json({ error: "Not authenticated" });
 
-  const company = await prisma.company.findUnique({ where: { id: session.companyId } });
-  const person = await prisma.person.findUnique({ where: { id: session.personId } });
+    // If superadmin, return early
+    if (session.role === "SUPERADMIN") {
+      return res.json({
+        ok: true,
+        session,
+        role: "SUPERADMIN",
+        company: null,
+        person: null,
+      });
+    }
 
-  return res.json({
-    ok: true,
-    session,
-    company: company ? { id: company.id, tin: company.tin, name: company.name } : null,
-    person: person ? { 
-      id: person.id, 
-      fullName: person.fullName, 
-      pinfl: person.pinfl,
-      jshshir: person.jshshir,
-    } : null,
-  });
+    // For regular users, query company and person
+    const company = await prisma.company.findUnique({ where: { id: session.companyId } });
+    const person = await prisma.person.findUnique({ where: { id: session.personId } });
+
+    return res.json({
+      ok: true,
+      session,
+      role: session.role,
+      company: company ? { id: company.id, tin: company.tin, name: company.name } : null,
+      person: person ? { 
+        id: person.id, 
+        fullName: person.fullName, 
+        pinfl: person.pinfl,
+        jshshir: person.jshshir,
+      } : null,
+    });
+  } catch (err: unknown) {
+    console.error(`[backend] /auth/me error:`, err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: "Failed to get user info", message: msg });
+  }
 }
 
 

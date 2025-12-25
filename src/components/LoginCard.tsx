@@ -24,7 +24,7 @@ export default function LoginCard() {
       await authLogin(taxId, password);
       showSuccess("Successfully logged in!");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Tax ID or password is incorrect";
+      const errorMessage = error instanceof Error ? error.message : "Login or password is incorrect";
       showError(errorMessage);
     } finally {
       setLoading(false);

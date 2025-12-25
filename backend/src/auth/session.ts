@@ -6,7 +6,7 @@ export interface SessionPayload {
   companyId: string;
   companyTin: string;
   personId: string;
-  role: "DIRECTOR" | "ACCOUNTANT";
+  role: "DIRECTOR" | "ACCOUNTANT" | "SUPERADMIN";
 }
 
 const COOKIE_NAME = "finance21_session";
@@ -46,6 +46,14 @@ export function requireSession(req: Request, res: Response, next: NextFunction) 
 
 export function getSession(req: Request): SessionPayload | null {
   return ((req as any).session as SessionPayload | undefined) || null;
+}
+
+export function requireSuperadmin(req: Request, res: Response, next: NextFunction) {
+  const session = getSession(req);
+  if (!session || session.role !== "SUPERADMIN") {
+    return res.status(403).json({ error: "Superadmin access required" });
+  }
+  return next();
 }
 
 
