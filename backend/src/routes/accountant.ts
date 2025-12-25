@@ -150,6 +150,13 @@ export async function assignAccountantToCompanyHandler(req: Request, res: Respon
   }
 
   try {
+    const session = (req as any).session as any;
+    
+    // Security check: Only allow if Superadmin OR if the company matches the user's session
+    if (session.role !== "SUPERADMIN" && session.companyId !== parsed.data.companyId) {
+      return res.status(403).json({ error: "Permission denied. You can only assign to your own company." });
+    }
+
     await prisma.companyRole.create({
       data: {
         companyId: parsed.data.companyId,
@@ -173,6 +180,13 @@ export async function removeAccountantFromCompanyHandler(req: Request, res: Resp
   const { companyId, accountantId } = req.params;
 
   try {
+    const session = (req as any).session as any;
+
+    // Security check: Only allow if Superadmin OR if the company matches the user's session
+    if (session.role !== "SUPERADMIN" && session.companyId !== companyId) {
+      return res.status(403).json({ error: "Permission denied. You can only remove from your own company." });
+    }
+
     await prisma.companyRole.deleteMany({
       where: {
         companyId,

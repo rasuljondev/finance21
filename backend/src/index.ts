@@ -49,13 +49,13 @@ app.post("/company/generate-credentials", requireSession, generateCredentialsHan
 // Superadmin routes
 app.get("/superadmin/companies", requireSession, requireSuperadmin, getCompaniesHandler);
 
-// Accountant management (superadmin only)
-app.post("/accountants", requireSession, requireSuperadmin, createAccountantHandler);
-app.get("/accountants", requireSession, requireSuperadmin, listAccountantsHandler);
-app.put("/accountants/:id", requireSession, requireSuperadmin, updateAccountantHandler);
-app.delete("/accountants/:id", requireSession, requireSuperadmin, deleteAccountantHandler);
-app.post("/accountants/assign", requireSession, requireSuperadmin, assignAccountantToCompanyHandler);
-app.delete("/accountants/:accountantId/companies/:companyId", requireSession, requireSuperadmin, removeAccountantFromCompanyHandler);
+// Accountant management
+app.post("/accountants", requireSession, requireSuperadmin, createAccountantHandler); // Only SA can create
+app.get("/accountants", requireSession, listAccountantsHandler); // Everyone can list to pick
+app.put("/accountants/:id", requireSession, requireSuperadmin, updateAccountantHandler); // Only SA can edit
+app.delete("/accountants/:id", requireSession, requireSuperadmin, deleteAccountantHandler); // Only SA can delete
+app.post("/accountants/assign", requireSession, assignAccountantToCompanyHandler); // Director can assign to OWN company
+app.delete("/accountants/:accountantId/companies/:companyId", requireSession, removeAccountantFromCompanyHandler); // Director can remove from OWN company
 
 // Accountant routes
 app.get("/accountant/companies", requireSession, getAccountantCompaniesHandler);
