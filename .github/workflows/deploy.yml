@@ -15,6 +15,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /var/www/finance21 || exit
             git fetch origin main
             git reset --hard origin/main
@@ -24,33 +25,33 @@ jobs:
             
             # 2. Prisma: Push schema to database and generate clients
             echo "Pushing Prisma schema to database..."
-            npx prisma db push --accept-data-loss || echo "Database push failed, continuing..."
+            npx prisma db push --accept-data-loss
             npx prisma generate
             
             # 3. Build and start Frontend
             echo "Building Next.js frontend..."
+            # Clear old build to ensure clean state
+            rm -rf .next
             npm run build
-            pm2 stop finance21-frontend || true
-            pm2 delete finance21-frontend || true
-            pm2 start npm --name "finance21-frontend" -- run start
+            pm2 restart finance21-frontend || pm2 start npm --name "finance21-frontend" -- run start
             
             # 4. Backend Service
             echo "Building backend..."
             cd backend
             npm install
+            # Clear old dist
+            rm -rf dist
             npm run build
-            pm2 stop finance21-backend || true
-            pm2 delete finance21-backend || true
-            pm2 start dist/index.js --name "finance21-backend"
+            pm2 restart finance21-backend || pm2 start dist/index.js --name "finance21-backend"
             
             # 5. Telegram Bot
             echo "Building telegram bot..."
             cd ../telegrambot
             npm install
+            # Clear old dist
+            rm -rf dist
             npm run build
-            pm2 stop finance21-bot || true
-            pm2 delete finance21-bot || true
-            pm2 start dist/index.js --name "finance21-bot"
+            pm2 restart finance21-bot || pm2 start dist/index.js --name "finance21-bot"
             
             # Save PM2 state
             pm2 save
