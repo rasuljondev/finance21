@@ -198,12 +198,14 @@ export async function syncDocumentsHandler(req: Request, res: Response) {
 
           const contractNumber = doc?.contract_number || doc?.contract?.number || doc?.contract_number || null;
           const contractDate = doc?.contract_date || doc?.contract?.date || doc?.contract_date || null;
+          const docType = String(doc?.type || "1");
 
           await prisma.document.upsert({
             where: { companyId_didoxDocumentId: { companyId: session.companyId, didoxDocumentId: didoxId } },
             update: {
               direction: dir,
               status,
+              type: docType,
               documentNumber: documentNumber ? String(documentNumber) : null,
               documentDate: documentDate ? new Date(documentDate) : null,
               amount: sanitizeAmount(amount),
@@ -219,6 +221,7 @@ export async function syncDocumentsHandler(req: Request, res: Response) {
               didoxDocumentId: didoxId,
               direction: dir,
               status,
+              type: docType,
               documentNumber: documentNumber ? String(documentNumber) : null,
               documentDate: documentDate ? new Date(documentDate) : null,
               amount: sanitizeAmount(amount),

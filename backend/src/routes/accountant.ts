@@ -217,16 +217,51 @@ export async function getAccountantCompaniesHandler(req: Request, res: Response)
       },
       include: {
         company: {
-          select: {
-            id: true,
-            tin: true,
-            name: true,
+          include: {
+            documents: {
+              select: {
+                type: true,
+                status: true,
+              },
+            },
           },
         },
       },
     });
 
-    const companies = roles.map((r) => r.company);
+    const companies = roles.map((r) => {
+      const c = r.company;
+      const stats = {
+        invoices: { total: 0, signed: 0, pending: 0, cancelled: 0, rejected: 0 },
+        poa: { total: 0, signed: 0, pending: 0, cancelled: 0, rejected: 0 },
+        contracts: { total: 0, signed: 0, pending: 0, cancelled: 0, rejected: 0 },
+      };
+
+      c.documents.forEach((doc) => {
+        const type = doc.type || "1";
+        const status = doc.status;
+        let category: "invoices" | "poa" | "contracts" | null = null;
+
+        if (type === "1") category = "invoices";
+        else if (type === "2") category = "poa";
+        else if (type === "3") category = "contracts";
+
+        if (category) {
+          stats[category].total++;
+          if (status === "SIGNED") stats[category].signed++;
+          else if (status === "PENDING") stats[category].pending++;
+          else if (status === "CANCELLED") stats[category].cancelled++;
+          else if (status === "REJECTED") stats[category].rejected++;
+        }
+      });
+
+      return {
+        id: c.id,
+        tin: c.tin,
+        name: c.name,
+        stats,
+      };
+    });
 
     return res.json({
       ok: true,

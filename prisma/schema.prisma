@@ -142,6 +142,7 @@ model Document {
   didoxDocumentId     String            // ID from Didox API
   direction           DocumentDirection
   status              DocumentStatus    @default(PENDING)
+  type                String?           @default("1") // 1: Invoice, 2: POA, 3: Contract, etc.
   
   // Document details
   documentNumber      String?
