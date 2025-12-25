@@ -2,8 +2,10 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import SuperadminTopBar from "@/components/layout/SuperadminTopBar";
+import SuperadminSidebar from "@/components/layout/SuperadminSidebar";
 import { useRouter } from "next/navigation";
 import apiClient from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 
 interface SuperadminLayoutContextType {
   isSidebarOpen: boolean;
@@ -46,11 +48,19 @@ export const SuperadminLayoutProvider = ({ children }: { children: ReactNode }) 
 
   return (
     <SuperadminLayoutContext.Provider value={{ isSidebarOpen, toggleSidebar, closeSidebar, openSidebar }}>
-      <div className="min-h-screen bg-[#F8F9FD] dark:bg-[#0a0b14] flex flex-col">
-        <SuperadminTopBar />
-        <main className="pt-16 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          {children}
-        </main>
+      <div className="min-h-screen bg-[#F8F9FD] dark:bg-[#0a0b14] flex">
+        <SuperadminSidebar />
+        <div 
+          className={cn(
+            "flex-1 flex flex-col min-w-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
+            isSidebarOpen ? "pl-20" : "pl-0"
+          )}
+        >
+          <SuperadminTopBar />
+          <main className="pt-16 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </div>
     </SuperadminLayoutContext.Provider>
   );
