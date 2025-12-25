@@ -8,6 +8,15 @@ import { listDocumentsHandler, syncDocumentsHandler } from "./routes/documents.j
 import { eriLoginHandler, meHandler, loginHandler } from "./routes/auth.js";
 import { getCompanyHandler, updateCompanyHandler, generateCredentialsHandler } from "./routes/company.js";
 import { getCompaniesHandler } from "./routes/superadmin.js";
+import {
+  createAccountantHandler,
+  listAccountantsHandler,
+  updateAccountantHandler,
+  deleteAccountantHandler,
+  assignAccountantToCompanyHandler,
+  removeAccountantFromCompanyHandler,
+  getAccountantCompaniesHandler,
+} from "./routes/accountant.js";
 import { clearSessionCookie, requireSession, requireSuperadmin } from "./auth/session.js";
 
 loadRootEnv();
@@ -39,6 +48,17 @@ app.post("/company/generate-credentials", requireSession, generateCredentialsHan
 
 // Superadmin routes
 app.get("/superadmin/companies", requireSession, requireSuperadmin, getCompaniesHandler);
+
+// Accountant management (superadmin only)
+app.post("/accountants", requireSession, requireSuperadmin, createAccountantHandler);
+app.get("/accountants", requireSession, requireSuperadmin, listAccountantsHandler);
+app.put("/accountants/:id", requireSession, requireSuperadmin, updateAccountantHandler);
+app.delete("/accountants/:id", requireSession, requireSuperadmin, deleteAccountantHandler);
+app.post("/accountants/assign", requireSession, requireSuperadmin, assignAccountantToCompanyHandler);
+app.delete("/accountants/:accountantId/companies/:companyId", requireSession, requireSuperadmin, removeAccountantFromCompanyHandler);
+
+// Accountant routes
+app.get("/accountant/companies", requireSession, getAccountantCompaniesHandler);
 
 const port = Number(process.env.BACKEND_PORT || "3001");
 app.listen(port, () => {

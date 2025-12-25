@@ -84,20 +84,39 @@ model Person {
   directs   Company[]   @relation("CompanyDirector")
 }
 
+model Accountant {
+  id        String   @id @default(uuid())
+  name      String
+  login     String   @unique
+  password  String
+  telegramId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles     CompanyRole[]
+
+  @@index([login])
+}
+
 model CompanyRole {
-  id        String          @id @default(uuid())
-  companyId String
-  personId  String
-  role      CompanyRoleType
+  id          String          @id @default(uuid())
+  companyId   String
+  personId    String?         // For DIRECTOR role
+  accountantId String?        // For ACCOUNTANT role
+  role        CompanyRoleType
 
-  company   Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  person    Person          @relation(fields: [personId], references: [id], onDelete: Cascade)
+  company     Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  person      Person?         @relation(fields: [personId], references: [id], onDelete: Cascade)
+  accountant  Accountant?     @relation(fields: [accountantId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime        @default(now())
+  createdAt   DateTime        @default(now())
 
   @@unique([companyId, personId, role])
+  @@unique([companyId, accountantId, role])
   @@index([companyId])
   @@index([personId])
+  @@index([accountantId])
   @@index([role])
 }
 

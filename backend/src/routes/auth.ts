@@ -52,6 +52,35 @@ export async function loginHandler(req: Request, res: Response) {
     }
 
     const t1 = Date.now();
+    
+    // Check for accountant login
+    const accountant = await prisma.accountant.findUnique({
+      where: { login },
+    });
+    
+    if (accountant && accountant.password === password) {
+      console.log(`[backend] accountant login successful for ${login}, issuing session cookie...`);
+      setSessionCookie(res, {
+        companyId: "accountant",
+        companyTin: "ACCOUNTANT",
+        personId: accountant.id,
+        role: "ACCOUNTANT",
+      });
+
+      console.log(`[backend] accountant login TOTAL ${Date.now() - start}ms`);
+      return res.json({
+        ok: true,
+        role: "ACCOUNTANT",
+        accountant: {
+          id: accountant.id,
+          name: accountant.name,
+          login: accountant.login,
+          telegramId: accountant.telegramId,
+        },
+      });
+    }
+
+    // Check for company/director login
     const company = await prisma.company.findFirst({
       where: { login },
       include: {
@@ -227,7 +256,25 @@ export async function meHandler(req: Request, res: Response) {
       });
     }
 
-    // For regular users, query company and person
+    // If accountant, return accountant info
+    if (session.role === "ACCOUNTANT") {
+      const accountant = await prisma.accountant.findUnique({ where: { id: session.personId } });
+      return res.json({
+        ok: true,
+        session,
+        role: "ACCOUNTANT",
+        accountant: accountant ? {
+          id: accountant.id,
+          name: accountant.name,
+          login: accountant.login,
+          telegramId: accountant.telegramId,
+        } : null,
+        company: null,
+        person: null,
+      });
+    }
+
+    // For regular users (DIRECTOR), query company and person
     const company = await prisma.company.findUnique({ where: { id: session.companyId } });
     const person = await prisma.person.findUnique({ where: { id: session.personId } });
 

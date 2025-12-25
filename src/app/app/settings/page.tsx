@@ -15,6 +15,9 @@ import {
   MessageCircle,
   HelpCircle,
   Edit2,
+  Users,
+  X,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -40,6 +43,12 @@ interface CompanyData {
     pinfl: string | null;
     jshshir: string | null;
   } | null;
+  accountants?: Array<{
+    id: string;
+    name: string;
+    login: string;
+    telegramId: string | null;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,6 +62,8 @@ export default function SettingsPage() {
   const [company, setCompany] = useState<CompanyData | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [allAccountants, setAllAccountants] = useState<Array<{ id: string; name: string; login: string }>>([]);
+  const [showAccountantSelect, setShowAccountantSelect] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -62,7 +73,44 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchCompany();
+    fetchAllAccountants();
   }, []);
+
+  const fetchAllAccountants = async () => {
+    try {
+      const res = await apiClient.get("/accountants");
+      if (res.data.ok) {
+        setAllAccountants(res.data.accountants);
+      }
+    } catch (err) {
+      console.error("Error fetching accountants:", err);
+    }
+  };
+
+  const handleAssignAccountant = async (accountantId: string) => {
+    try {
+      await apiClient.post("/accountants/assign", {
+        companyId: company?.id,
+        accountantId,
+      });
+      showSuccess("Accountant assigned successfully");
+      setShowAccountantSelect(false);
+      fetchCompany();
+    } catch (err: any) {
+      showError(err.response?.data?.error || "Failed to assign accountant");
+    }
+  };
+
+  const handleRemoveAccountant = async (accountantId: string) => {
+    if (!company?.id) return;
+    try {
+      await apiClient.delete(`/accountants/${accountantId}/companies/${company.id}`);
+      showSuccess("Accountant removed successfully");
+      fetchCompany();
+    } catch (err: any) {
+      showError(err.response?.data?.error || "Failed to remove accountant");
+    }
+  };
 
   useEffect(() => {
     if (company) {
@@ -338,6 +386,83 @@ export default function SettingsPage() {
               Login is your STIR ({company.tin}). Password: 1234567890
             </p>
           </div>
+        </div>
+
+        {/* Accountants Assignment */}
+        <div className="bg-white dark:bg-[#111322] rounded-3xl border border-slate-200 dark:border-white/5 p-6 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/5">
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5 text-blue-600" />
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Assigned Accountants</h2>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAccountantSelect(true)}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              Assign Accountant
+            </Button>
+          </div>
+
+          {showAccountantSelect && (
+            <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 dark:text-white">Select Accountant</h3>
+                <button
+                  onClick={() => setShowAccountantSelect(false)}
+                  className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded transition-colors"
+                >
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {allAccountants
+                  .filter((acc) => !company.accountants?.some((a) => a.id === acc.id))
+                  .map((acc) => (
+                    <button
+                      key={acc.id}
+                      onClick={() => handleAssignAccountant(acc.id)}
+                      className="w-full text-left p-3 rounded-lg bg-white dark:bg-[#111322] border border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <div className="font-bold text-slate-900 dark:text-white">{acc.name}</div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400">Login: {acc.login}</div>
+                    </button>
+                  ))}
+                {allAccountants.filter((acc) => !company.accountants?.some((a) => a.id === acc.id)).length === 0 && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                    All accountants are already assigned
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {company.accountants && company.accountants.length > 0 ? (
+            <div className="space-y-3">
+              {company.accountants.map((acc) => (
+                <div
+                  key={acc.id}
+                  className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5"
+                >
+                  <div>
+                    <div className="font-bold text-slate-900 dark:text-white">{acc.name}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">Login: {acc.login}</div>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveAccountant(acc.id)}
+                    className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+              No accountants assigned to this company
+            </p>
+          )}
         </div>
       </div>
     </div>

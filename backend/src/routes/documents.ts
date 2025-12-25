@@ -7,6 +7,7 @@ import { getSession } from "../auth/session.js";
 const QuerySchema = z.object({
   direction: z.enum(["INCOMING", "OUTGOING"]),
   search: z.string().optional(),
+  companyId: z.string().optional(), // For accountants to filter by company
 });
 
 const SyncBodySchema = z.object({
@@ -43,7 +44,36 @@ export async function listDocumentsHandler(req: Request, res: Response) {
     const session = getSession(req);
     if (!session) return res.status(401).json({ error: "Not authenticated" });
 
-    const where: any = { companyId: session.companyId, direction: parsed.data.direction };
+    let where: any = { direction: parsed.data.direction };
+
+    // For accountants, filter by assigned companies
+    if (session.role === "ACCOUNTANT") {
+      // Get all companies assigned to this accountant
+      const roles = await prisma.companyRole.findMany({
+        where: {
+          accountantId: session.personId,
+          role: "ACCOUNTANT",
+        },
+        select: { companyId: true },
+      });
+      const companyIds = roles.map((r) => r.companyId);
+
+      if (companyIds.length === 0) {
+        return res.json({ documents: [] });
+      }
+
+      // If specific companyId is provided and it's in the assigned companies, filter by it
+      if (parsed.data.companyId && parsed.data.companyId !== "all" && companyIds.includes(parsed.data.companyId)) {
+        where.companyId = parsed.data.companyId;
+      } else {
+        // Otherwise, show all assigned companies
+        where.companyId = { in: companyIds };
+      }
+    } else {
+      // For directors, use their company
+      where.companyId = session.companyId;
+    }
+
     if (parsed.data.search?.trim()) {
       const q = parsed.data.search.trim();
       where.OR = [

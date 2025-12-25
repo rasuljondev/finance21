@@ -25,6 +25,7 @@ export async function getCompanyHandler(req: Request, res: Response) {
         roles: {
           include: {
             person: true,
+            accountant: true,
           },
         },
       },
@@ -54,6 +55,14 @@ export async function getCompanyHandler(req: Request, res: Response) {
               jshshir: company.director.jshshir,
             }
           : null,
+        accountants: company.roles
+          .filter((r) => r.role === "ACCOUNTANT" && r.accountant)
+          .map((r) => ({
+            id: r.accountant!.id,
+            name: r.accountant!.name,
+            login: r.accountant!.login,
+            telegramId: r.accountant!.telegramId,
+          })),
         createdAt: company.createdAt,
         updatedAt: company.updatedAt,
       },

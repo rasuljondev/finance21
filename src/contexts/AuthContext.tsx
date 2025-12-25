@@ -74,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Route based on role
       if (data.role === "SUPERADMIN") {
         router.push("/superadmin/dashboard");
+      } else if (data.role === "ACCOUNTANT") {
+        router.push("/accountant/dashboard");
       } else {
         setCompany(data.company || null);
         setPerson(data.person || null);

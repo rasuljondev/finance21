@@ -20,6 +20,7 @@ import { useAlert } from "@/components/ui/AlertProvider";
 
 import { useAuth } from "@/contexts/AuthContext";
 import apiClient from "@/lib/api-client";
+import { useAccountantLayout } from "@/components/layout/AccountantLayoutProvider";
 
 interface InvoiceListProps {
   title: string;
@@ -29,6 +30,13 @@ interface InvoiceListProps {
 export function InvoiceList({ title, type }: InvoiceListProps) {
   const { showSuccess, showError } = useAlert();
   const { company } = useAuth();
+  const accountantLayout = (() => {
+    try {
+      return useAccountantLayout();
+    } catch {
+      return null;
+    }
+  })();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -55,17 +63,23 @@ export function InvoiceList({ title, type }: InvoiceListProps) {
   });
 
   const fetchInvoices = async () => {
-    if (!company) return;
+    // For accountants, don't require company from auth
+    if (!accountantLayout && !company) return;
     
     setLoading(true);
     try {
       const direction = type === "incoming" ? "INCOMING" : "OUTGOING";
-      const response = await apiClient.get("/documents", {
-        params: {
-          direction,
-          search: searchQuery || undefined,
-        },
-      });
+      const params: any = {
+        direction,
+        search: searchQuery || undefined,
+      };
+      
+      // Add companyId filter for accountants
+      if (accountantLayout?.selectedCompanyId && accountantLayout.selectedCompanyId !== "all") {
+        params.companyId = accountantLayout.selectedCompanyId;
+      }
+      
+      const response = await apiClient.get("/documents", { params });
       setInvoices(response.data?.documents || []);
     } catch (err: any) {
       console.error(`Error fetching ${type} invoices:`, err);
@@ -78,7 +92,7 @@ export function InvoiceList({ title, type }: InvoiceListProps) {
 
   useEffect(() => {
     fetchInvoices();
-  }, [type, company, searchQuery]);
+  }, [type, company, searchQuery, accountantLayout?.selectedCompanyId]);
 
   const handleSync = async () => {
     setSyncing(true);
