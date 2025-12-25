@@ -5,6 +5,7 @@ import { LayoutDashboard, Building2, Hash, RefreshCw, Search } from "lucide-reac
 import { useAccountantLayout } from "@/components/layout/AccountantLayoutProvider";
 import apiClient from "@/lib/api-client";
 import { useAlert } from "@/components/ui/AlertProvider";
+import { cn } from "@/lib/utils";
 
 interface DocStats {
   total: number;
