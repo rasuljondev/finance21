@@ -35,7 +35,7 @@ bot.start(async (ctx) => {
     
     let message = `👋 Welcome to Finance21 Bot, ${firstName}!\n\n` +
       `📋 Your Telegram Information:\n` +
-      `🆔 User ID: \`${userId}\`\n` +
+      `🆔 User ID: ${userId}\n` +
       `👤 Username: ${username}\n\n`;
 
     try {
@@ -87,7 +87,7 @@ bot.start(async (ctx) => {
 
     message += `Use /help for available commands.`;
 
-    await ctx.reply(message, { parse_mode: "Markdown" });
+    await ctx.reply(message);
   } catch (error) {
     console.error("[telegrambot] Error in /start command:", error);
     try {
