@@ -17,7 +17,13 @@ import {
   removeAccountantFromCompanyHandler,
   getAccountantCompaniesHandler,
 } from "./routes/accountant.js";
+import {
+  getDocumentSignDataHandler,
+  submitBatchSignatureHandler,
+  getSignableDocsHandler,
+} from "./routes/batchSign.js";
 import { clearSessionCookie, requireSession, requireSuperadmin } from "./auth/session.js";
+import "./workers/signing.ts"; // Initialize worker
 
 loadRootEnv();
 
@@ -59,6 +65,9 @@ app.delete("/accountants/:accountantId/companies/:companyId", requireSession, re
 
 // Accountant routes
 app.get("/accountant/companies", requireSession, getAccountantCompaniesHandler);
+app.get("/accountant/signable-docs", requireSession, getSignableDocsHandler);
+app.get("/documents/:id/sign-data", requireSession, getDocumentSignDataHandler);
+app.post("/batch-sign/submit", requireSession, submitBatchSignatureHandler);
 
 const port = Number(process.env.BACKEND_PORT || "3001");
 app.listen(port, () => {

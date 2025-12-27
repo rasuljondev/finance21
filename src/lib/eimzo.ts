@@ -172,6 +172,25 @@ class EIMZOClient {
   }
 
   /**
+   * Append PKCS7 signature (for incoming documents)
+   * @param data Base64 encoded signature to append to
+   * @param keyId Key ID from loadKey
+   */
+  async appendSignature(
+    data: string,
+    keyId: string
+  ): Promise<EIMZOCreateSignatureResponse> {
+    const message: EIMZOWSMessage = {
+      plugin: "pkcs7",
+      name: "append_pkcs7_attached",
+      arguments: [data, keyId],
+    };
+
+    const response = await this.sendMessage(message);
+    return response as EIMZOCreateSignatureResponse;
+  }
+
+  /**
    * Close connection
    */
   disconnect() {

@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { LayoutDashboard, Building2, Hash, RefreshCw, Search } from "lucide-react";
+import { LayoutDashboard, Building2, Hash, RefreshCw, Search, PenTool } from "lucide-react";
 import { useAccountantLayout } from "@/components/layout/AccountantLayoutProvider";
 import apiClient from "@/lib/api-client";
 import { useAlert } from "@/components/ui/AlertProvider";
 import { cn } from "@/lib/utils";
+import BatchSignModal from "@/components/accountant/BatchSignModal";
 
 interface DocStats {
   total: number;
@@ -32,6 +33,7 @@ export default function AccountantDashboardPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showBatchSign, setShowBatchSign] = useState(false);
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -89,6 +91,13 @@ export default function AccountantDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowBatchSign(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20"
+          >
+            <PenTool className="w-4 h-4" />
+            Batch Sign
+          </button>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -235,6 +244,15 @@ export default function AccountantDashboardPage() {
           </table>
         </div>
       </div>
+
+      {showBatchSign && (
+        <BatchSignModal 
+          onClose={() => setShowBatchSign(false)} 
+          onComplete={() => {
+            fetchCompanies();
+          }} 
+        />
+      )}
     </div>
   );
 }

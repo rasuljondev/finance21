@@ -104,6 +104,66 @@ export class DidoxClient {
     if (!token) throw new Error("Didox auth response missing token");
     return { token };
   }
+
+  async loginCompanyAsAccountant(params: {
+    companyTin: string;
+    accountantToken: string;
+    locale?: string;
+  }): Promise<{ token: string }> {
+    const locale = params.locale || "ru";
+    const url = `${this.baseUrl}/v1/auth/company/${params.companyTin}/login/${locale}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        ...this.buildHeaders(params.accountantToken),
+      },
+      signal: AbortSignal.timeout(this.timeoutMs),
+    });
+
+    const text = await res.text();
+    if (!res.ok) throw new Error(`Didox company-login error ${res.status}: ${text || res.statusText}`);
+    const data = JSON.parse(text) as any;
+    const token = data?.token;
+    if (!token) throw new Error("Didox company-login response missing token");
+    return { token };
+  }
+
+  async signDocument(params: {
+    documentId: string;
+    signature: string; // timeStampTokenB64
+    userKey: string; // company-specific token
+  }): Promise<{ ok: boolean }> {
+    const url = `${this.baseUrl}/v1/documents/${params.documentId}/sign`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: this.buildHeaders(params.userKey),
+      body: JSON.stringify({ signature: params.signature }),
+      signal: AbortSignal.timeout(this.timeoutMs),
+    });
+
+    const text = await res.text();
+    if (!res.ok) throw new Error(`Didox sign error ${res.status}: ${text || res.statusText}`);
+    const data = JSON.parse(text) as any;
+    return { ok: !!data?.data };
+  }
+
+  async getDocumentDetails(params: {
+    documentId: string;
+    userKey: string;
+    owner?: "1" | "0";
+  }): Promise<any> {
+    const owner = params.owner ?? "1";
+    const url = `${this.baseUrl}/v1/documents/${params.documentId}?owner=${owner}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: this.buildHeaders(params.userKey),
+      signal: AbortSignal.timeout(this.timeoutMs),
+    });
+
+    const text = await res.text();
+    if (!res.ok) throw new Error(`Didox doc-details error ${res.status}: ${text || res.statusText}`);
+    return JSON.parse(text);
+  }
 }
 
 
