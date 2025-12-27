@@ -120,7 +120,7 @@ export default function BatchSignModal({ onClose, onComplete }: BatchSignModalPr
         if (!sigRes.success) throw new Error(sigRes.error || "Failed to sign login");
 
         // Request timestamp
-        const tsRes = await apiClient.post("/api/backend/auth/eri/login", {
+        const tsRes = await apiClient.post("/auth/eri/login", {
           inn: group.tin,
           pkcs7_64: sigRes.pkcs7_64,
           signature_hex: sigRes.signature_hex,
@@ -158,12 +158,7 @@ export default function BatchSignModal({ onClose, onComplete }: BatchSignModalPr
 
             if (!docSig.success) throw new Error(docSig.error || "E-IMZO signing failed");
 
-            // Step D: Request Timestamp from Didox
-            const tsData = await apiClient.post("/api/backend/auth/eri/login", { // Using this as proxy for timestamp for now
-               // This is a placeholder - I should have a proper timestamp proxy
-            });
-            
-            // Actually, let's submit RAW signatures to the queue and let the WORKER handle timestamping.
+            // Submit RAW signatures to the queue and let the WORKER handle timestamping.
             // This is safer and faster for the UI.
             
             await apiClient.post("/batch-sign/submit", {

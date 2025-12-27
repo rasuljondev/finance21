@@ -23,7 +23,7 @@ import {
   getSignableDocsHandler,
 } from "./routes/batchSign.js";
 import { clearSessionCookie, requireSession, requireSuperadmin } from "./auth/session.js";
-import "./workers/signing.ts"; // Initialize worker
+import "./workers/signing.js"; // Initialize worker
 
 loadRootEnv();
 
