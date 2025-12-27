@@ -158,6 +158,39 @@ export async function eriLoginHandler(req: Request, res: Response) {
     console.log(`[backend] performing DB operations (transaction)...`);
     const dbStart = Date.now();
     
+    // Check if this ERI belongs to a registered Accountant
+    const accountant = await prisma.accountant.findUnique({
+      where: { pinfl: resolvedPinfl },
+    });
+
+    if (accountant) {
+      console.log(`[backend] ERI belongs to accountant: ${accountant.name}`);
+      const expiresAt = new Date(Date.now() + 360 * 60 * 1000);
+      
+      await prisma.didoxToken.upsert({
+        where: { accountantId: accountant.id },
+        update: { token, expiresAt },
+        create: { accountantId: accountant.id, token, expiresAt },
+      });
+
+      setSessionCookie(res, {
+        companyId: "accountant",
+        companyTin: "ACCOUNTANT",
+        personId: accountant.id,
+        role: "ACCOUNTANT",
+      });
+
+      return res.json({
+        ok: true,
+        role: "ACCOUNTANT",
+        accountant: {
+          id: accountant.id,
+          name: accountant.name,
+          login: accountant.login,
+        },
+      });
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       // Extract and combine address from certificate if available
       const combinedAddress = [city, district].filter(Boolean).join(", ").trim().toUpperCase();
