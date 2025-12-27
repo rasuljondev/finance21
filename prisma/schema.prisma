@@ -90,16 +90,18 @@ model Person {
 }
 
 model Accountant {
-  id        String   @id @default(uuid())
-  name      String
-  login     String   @unique
-  password  String
+  id         String   @id @default(uuid())
+  name       String
+  login      String   @unique
+  password   String
+  pinfl      String?  @unique
   telegramId String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  roles     CompanyRole[]
+  roles      CompanyRole[]
+  didoxToken DidoxToken?
 
   @@index([login])
 }
@@ -126,14 +128,16 @@ model CompanyRole {
 }
 
 model DidoxToken {
-  id        String   @id @default(uuid())
-  companyId String   @unique
-  token     String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String      @id @default(uuid())
+  companyId    String?     @unique
+  accountantId String?     @unique
+  token        String
+  expiresAt    DateTime
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company      Company?    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  accountant   Accountant? @relation(fields: [accountantId], references: [id], onDelete: Cascade)
 }
 
 model Document {
