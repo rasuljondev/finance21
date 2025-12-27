@@ -21,6 +21,7 @@ import {
   getDocumentSignDataHandler,
   submitBatchSignatureHandler,
   getSignableDocsHandler,
+  accountantCompanyLoginHandler,
 } from "./routes/batchSign.js";
 import { clearSessionCookie, requireSession, requireSuperadmin } from "./auth/session.js";
 import "./workers/signing.js"; // Initialize worker
@@ -66,6 +67,7 @@ app.delete("/accountants/:accountantId/companies/:companyId", requireSession, re
 // Accountant routes
 app.get("/accountant/companies", requireSession, getAccountantCompaniesHandler);
 app.get("/accountant/signable-docs", requireSession, getSignableDocsHandler);
+app.post("/accountant/company-login", requireSession, accountantCompanyLoginHandler);
 app.get("/documents/:id/sign-data", requireSession, getDocumentSignDataHandler);
 app.post("/batch-sign/submit", requireSession, submitBatchSignatureHandler);
 

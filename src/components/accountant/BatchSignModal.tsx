@@ -110,35 +110,16 @@ export default function BatchSignModal({ onClose, onComplete }: BatchSignModalPr
 
       try {
         // Step A: Login to company via Didox
-        // First, sign the TIN to get a session
+        const loginRes = await apiClient.post("/accountant/company-login", {
+          companyTin: group.tin,
+        });
+
+        if (!loginRes.data.ok) throw new Error(loginRes.data.error || "Failed to login to company");
+        const companyToken = loginRes.data.token;
+
         const cert = group.selectedCert!;
         const keyRes = await eimzo.loadKey(cert);
         if (!keyRes.success) throw new Error(keyRes.error || "Failed to load key");
-
-        const tinB64 = Buffer.from(group.tin).toString("base64");
-        const sigRes = await eimzo.createSignature(tinB64, keyRes.keyId!);
-        if (!sigRes.success) throw new Error(sigRes.error || "Failed to sign login");
-
-        // Request timestamp
-        const tsRes = await apiClient.post("/auth/eri/login", {
-          inn: group.tin,
-          pkcs7_64: sigRes.pkcs7_64,
-          signature_hex: sigRes.signature_hex,
-          // other fields omitted or filled with defaults for accountant login
-          companyName: group.companyName,
-          fullName: parseCertificateData(cert.alias).fullName,
-        });
-
-        // Actually, we need a special endpoint for "Accountant Login to Company"
-        // But for now, let's assume we can get a company-specific token.
-        // Wait, I implemented 'loginCompanyAsAccountant' in DidoxClient.
-        // I need a backend endpoint for it.
-        
-        // REFINEMENT: Let's use the standard ERI login flow for now if the accountant has the director's key,
-        // or implement the specific accountant-login-to-company if they have their own key.
-        
-        // For this demo/batch implementation, we'll assume the backend can handle the signature submission
-        // using the companyId and the accountant's current session if they are authorized.
         
         updateGroupStatus(group.companyId, "signing");
 
@@ -165,7 +146,7 @@ export default function BatchSignModal({ onClose, onComplete }: BatchSignModalPr
               documentId: doc.id,
               signature: docSig.pkcs7_64, // Worker will add timestamp
               companyId: group.companyId,
-              companyToken: "placeholder", // Worker will use saved token or accountant session
+              companyToken: companyToken, 
             });
 
             setCurrentProgress(p => ({ ...p, current: p.current + 1, success: p.success + 1 }));

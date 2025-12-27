@@ -7,6 +7,43 @@ import { DidoxClient } from "../didox/didoxClient.js";
 const didox = new DidoxClient();
 
 /**
+ * POST /accountant/company-login
+ * Logs an accountant into a specific company to get a temporary user-key.
+ */
+export async function accountantCompanyLoginHandler(req: Request, res: Response) {
+  const schema = z.object({
+    companyTin: z.string(),
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Invalid TIN" });
+
+  const session = (req as any).session;
+  
+  try {
+    // 1. Get accountant's Didox token
+    const tokenRecord = await prisma.didoxToken.findUnique({
+      where: { accountantId: session.personId },
+    });
+
+    if (!tokenRecord) {
+      return res.status(401).json({ error: "Accountant not logged into Didox. Please login with ERI." });
+    }
+
+    // 2. Exchange for company token
+    const { token } = await didox.loginCompanyAsAccountant({
+      companyTin: parsed.data.companyTin,
+      accountantToken: tokenRecord.token,
+    });
+
+    return res.json({ ok: true, token });
+  } catch (err: any) {
+    console.error(`[backend] companyLogin error:`, err);
+    return res.status(500).json({ error: "Failed to login to company", message: err.message });
+  }
+}
+
+/**
  * GET /documents/:id/sign-data
  * Returns the data that needs to be signed via E-IMZO.
  * For outgoing: document JSON (base64)
@@ -84,6 +121,7 @@ export async function submitBatchSignatureHandler(req: Request, res: Response) {
 
     await signingQueue.add(`sign-${doc.id}`, {
       documentId: doc.id,
+      didoxDocumentId: doc.didoxDocumentId,
       signature: parsed.data.signature,
       companyId: parsed.data.companyId,
       companyToken: parsed.data.companyToken,

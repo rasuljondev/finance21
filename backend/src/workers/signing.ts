@@ -9,19 +9,23 @@ const didox = new DidoxClient();
 export const signingWorker = new Worker(
   SIGNING_QUEUE_NAME,
   async (job: Job<SigningJobData>) => {
-    const { documentId, signature, companyToken } = job.data;
+    const { documentId, didoxDocumentId, signature, companyToken } = job.data;
 
-    console.log(`[worker] Processing document ${documentId} for company ${job.data.companyId}`);
+    console.log(`[worker] Processing document ${documentId} (Didox: ${didoxDocumentId}) for company ${job.data.companyId}`);
 
     try {
-      // 1. Submit the signature to Didox
-      // Note: In the browser, we already attached the timestamp if it's a simple sign.
-      // If the frontend sends the raw pkcs7, we might need to add timestamp here.
-      // For now, assume frontend sends timeStampTokenB64 as requested in plan.
-      
+      // 1. Add Timestamp from Didox
+      console.log(`[worker] Requesting timestamp for document ${documentId}...`);
+      const { timeStampTokenB64 } = await didox.addTimestamp({
+        pkcs7_64: signature,
+        signature_hex: "", // Not used by Didox timestamp endpoint if pkcs7 is provided
+      });
+
+      // 2. Submit the signature to Didox
+      console.log(`[worker] Submitting signature for document ${documentId}...`);
       const signRes = await didox.signDocument({
-        documentId,
-        signature,
+        documentId: didoxDocumentId,
+        signature: timeStampTokenB64,
         userKey: companyToken,
       });
 

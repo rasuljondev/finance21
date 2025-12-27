@@ -4,8 +4,9 @@ import { redisConnection } from "../config/redis.js";
 export const SIGNING_QUEUE_NAME = "signing-queue";
 
 export interface SigningJobData {
-  documentId: string;
-  signature: string; // The timeStampTokenB64 or pkcs7 signature from browser
+  documentId: string; // Database ID
+  didoxDocumentId: string; // Didox ID
+  signature: string; // The pkcs7 signature from browser
   companyId: string;
   companyToken: string; // The temporary company-specific token from Didox
   accountantId: string;
